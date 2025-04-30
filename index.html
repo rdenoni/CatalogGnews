@@ -1,0 +1,359 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Arte GNews</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' };
+    </script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700;800&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="font-sans transition-colors duration-300 scroll-smooth">
+    <div id="app" class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-gradient-to-r from-red-500 to-red-600 dark:bg-gradient-to-r dark:from-yellow-400 dark:to-yellow-500 text-white p-4 shadow-lg sticky top-2 mx-auto rounded-2xl z-50 backdrop-blur-lg w-[80%]" role="banner">
+            <div class="max-w-xl mx-auto flex flex-col sm:flex-row justify-center items-center gap-4 w-full">
+                <div class="text-center sm:text-left">
+                    <h1 class="header-title text-2xl sm:text-3xl font-extrabold tracking-tight">GNEWS CATÁLOGO DE ARTE</h1>
+                    <p id="last-updated" class="text-xs text-gray-100 opacity-90 mt-1 dark:text-gray-900">Última atualização: 28/04/2025 09:51:26</p>
+                </div>
+                <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                    <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                        <div class="relative w-full sm:w-44">
+                            <input id="search-input" type="text" placeholder="Pesquisar cartões..." class="p-2 rounded-lg bg-white dark:bg-gray-700 dark:text-gray-100 text-gray-900 focus:ring-2 focus:ring-red-600 text-sm w-full pr-8 transition-all" aria-label="Pesquisar cartões">
+                            <button id="clear-search" class="absolute right-2 top-1/2 transform -translate-y-1/2 material-icons text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-sm hidden" title="Limpar pesquisa" aria-label="Limpar pesquisa">clear</button>
+                        </div>
+                        <select id="tag-filter" class="p-2 rounded-lg bg-white dark:bg-gray-700 dark:text-gray-100 text-gray-900 focus:ring-2 focus:ring-red-600 text-sm transition-all w-full sm:w-auto" aria-label="Filtrar por tag">
+                            <option value="">Todas as Tags</option>
+                            <option value="JRN">JRN</option>
+                            <option value="PRG">PRG</option>
+                            <option value="PRM">PRM</option>
+                            <option value="MKT">MKT</option>
+                            <option value="ESP">ESP</option>
+                            <option value="NOTE">NOTE</option>
+                        </select>
+                        <select id="sort-order" class="p-2 rounded-lg bg-white dark:bg-gray-700 dark:text-gray-100 text-gray-900 focus:ring-2 focus:ring-red-600 text-sm transition-all w-full sm:w-auto" aria-label="Ordenar cartões">
+                            <option value="name">Nome (A-Z)</option>
+                            <option value="lastEdited">Última Edição</option>
+                            <option value="tag">Tag</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="material-icons text-xl w-10 h-10 rounded-full hover:bg-white/30 dark:hover:bg-gray-800/30 transition-all dark-mode-toggle dark:text-gray-900 animate-toggle-mode" onclick="cardCatalog.toggleDarkMode()" title="Alternar modo escuro" aria-label="Alternar modo escuro">light_mode</button>
+                        <button class="material-icons text-xl w-10 h-10 rounded-full hover:bg-white/30 dark:hover:bg-gray-800/30 transition-all dark:text-gray-900 animate-help" onclick="cardCatalog.openHelpModal()" title="Ajuda" aria-label="Ajuda">help_outline</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main id="main-content" class="p-4 sm:p-6 max-w-7xl mx-auto mt-4">
+            <div id="home-screen">
+                <div class="flex justify-between items-center mb-6 sm:mb-8">
+                    <p class="text-gray-600 dark:text-gray-200 text-sm font-medium">Total: <span id="total-cards">0</span> | Filtrados: <span id="filtered-cards">0</span></p>
+                </div>
+                <div id="cards-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6"></div>
+            </div>
+        </main>
+
+        <!-- Floating Action Button Group -->
+        <div class="fab-group fixed bottom-4 sm:bottom-6 right-4 sm:right-6 z-40">
+            <button class="fab bg-gradient-to-r from-red-600 to-red-700 dark:from-yellow-500 dark:to-yellow-600 text-white shadow-lg hover:scale-110 active:scale-95 transition-all rounded-full w-10 sm:w-12 h-10 sm:h-12 flex items-center justify-center mb-2" onclick="document.getElementById('import-input').click()" title="Importar cartões" aria-label="Importar cartões">
+                <span class="material-icons text-xl sm:text-2xl">upload</span>
+            </button>
+            <button class="fab bg-gradient-to-r from-red-600 to-red-700 dark:from-yellow-500 dark:to-yellow-600 text-white shadow-lg hover:scale-110 active:scale-95 transition-all rounded-full w-10 sm:w-12 h-10 sm:h-12 flex items-center justify-center mb-2" onclick="cardCatalog.exportCards()" title="Exportar cartões" aria-label="Exportar cartões">
+                <span class="material-icons text-xl sm:text-2xl">download</span>
+            </button>
+            <button class="fab bg-gradient-to-r from-red-600 to-red-700 dark:from-yellow-500 dark:to-yellow-600 text-white shadow-lg hover:scale-110 active:scale-95 transition-all rounded-full w-12 sm:w-14 h-12 sm:h-14 flex items-center justify-center" onclick="cardCatalog.openCardModal()" title="Adicionar novo cartão" aria-label="Adicionar novo cartão">
+                <span class="material-icons text-2xl sm:text-3xl transition-transform hover:rotate-90">add</span>
+            </button>
+            <input id="import-input" type="file" accept=".json" class="hidden">
+        </div>
+
+        <!-- Card Modal -->
+        <div id="card-modal" class="modal hidden" role="dialog" aria-labelledby="modal-title">
+            <div class="modal-content bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-3xl shadow-xl max-w-3xl w-full max-w-[95vw] p-4 sm:p-6 transform transition-all">
+                <button class="modal-close bg-gray-200 dark:bg-gray-700 hover:bg-red-600 dark:hover:bg-yellow-500 text-gray-800 dark:text-gray-200 rounded-full w-8 sm:w-10 h-8 sm:h-10 flex items-center justify-center transition-all" onclick="cardCatalog.closeModal('card')" aria-label="Fechar modal" title="Fechar">
+                    <span class="material-icons text-lg sm:text-xl">close</span>
+                </button>
+                <h2 id="modal-title" class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 sm:mb-6">Adicionar/Editar Cartão</h2>
+                <form id="card-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-section bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <label for="card-type" class="text-sm font-semibold text-gray-700 dark:text-gray-100 flex items-center gap-2 mb-2">
+                            <span class="material-icons">category</span>Tipo de Cartão
+                        </label>
+                        <select id="card-type" class="w-full p-3 rounded-lg border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-red-600 dark:focus:ring-yellow-500 transition-all" aria-describedby="card-type-desc">
+                            <option value="normal">Normal</option>
+                            <option value="postit">Post-It</option>
+                        </select>
+                        <p id="card-type-desc" class="text-xs text-gray-500 dark:text-gray-400 mt-1">Escolha entre cartão normal (com imagem e links) ou Post-It (texto simples).</p>
+                    </div>
+                    <div class="form-section bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <label for="card-name" class="text-sm font-semibold text-gray-700 dark:text-gray-100 flex items-center gap-2 mb-2">
+                            <span class="material-icons">title</span>Nome do Cartão *
+                        </label>
+                        <input id="card-name" type="text" class="w-full p-3 rounded-lg border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-red-600 dark:focus:ring-yellow-500 transition-all" placeholder="Digite o nome do cartão (ex.: Promoção de Verão)" required aria-describedby="card-name-error">
+                        <p id="card-name-error" class="text-xs text-red-600 dark:text-yellow-400 mt-1 hidden">O nome do cartão é obrigatório.</p>
+                    </div>
+                    <div id="normal-fields" class="md:col-span-2 space-y-6">
+                        <div class="form-section bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <label for="card-tag" class="text-sm font-semibold text-gray-700 dark:text-gray-100 flex items-center gap-2 mb-2">
+                                <span class="material-icons">local_offer</span>Categoria
+                            </label>
+                            <select id="card-tag" class="w-full p-3 rounded-lg border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-red-600 dark:focus:ring-yellow-500 transition-all" aria-describedby="card-tag-desc">
+                                <option value="JRN">JRN (Jornais)</option>
+                                <option value="PRG">PRG (Programas)</option>
+                                <option value="PRM">PRM (Promo)</option>
+                                <option value="MKT">MKT (Marketing)</option>
+                                <option value="ESP">ESP (Esporte)</option>
+                            </select>
+                            <p id="card-tag-desc" class="text-xs text-gray-500 dark:text-gray-400 mt-1">Selecione a categoria correspondente ao cartão.</p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="form-section bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                                <label for="card-youtube" class="text-sm font-semibold text-gray-700 dark:text-gray-100 flex items-center gap-2 mb-2">
+                                    <span class="material-icons">play_circle</span>Link do Tutorial (YouTube)
+                                </label>
+                                <input id="card-youtube" type="url" class="w-full p-3 rounded-lg border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-red-600 dark:focus:ring-yellow-500 transition-all" placeholder="ex.: https://www.youtube.com/watch?v=..." aria-describedby="card-youtube-error">
+                                <p id="card-youtube-error" class="text-xs text-red-600 dark:text-yellow-400 mt-1 hidden">URL do YouTube inválida.</p>
+                            </div>
+                            <div class="form-section bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                                <label for="card-access" class="text-sm font-semibold text-gray-700 dark:text-gray-100 flex items-center gap-2 mb-2">
+                                    <span class="material-icons">folder</span>Caminho de Acesso
+                                </label>
+                                <input id="card-access" type="url" class="w-full p-3 rounded-lg border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-red-600 dark:focus:ring-yellow-500 transition-all" placeholder="ex.: https://drive.google.com/..." aria-describedby="card-access-error">
+                                <p id="card-access-error" class="text-xs text-red-600 dark:text-yellow-400 mt-1 hidden">URL de acesso inválida.</p>
+                            </div>
+                        </div>
+                        <div class="form-section bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <label for="card-image-input" class="text-sm font-semibold text-gray-700 dark:text-gray-100 flex items-center gap-2 mb-2">
+                                <span class="material-icons">image</span>Imagem de Visualização
+                            </label>
+                            <div class="flex items-center gap-2">
+                                <button type="button" id="select-image-btn" class="bg-red-600 dark:bg-yellow-500 text-white dark:text-gray-900 px-4 py-2 rounded-lg hover:bg-red-700 dark:hover:bg-yellow-600 transition-all text-sm font-semibold" aria-label="Selecionar imagem">Selecionar Imagem</button>
+                                <button type="button" id="remove-image-btn" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-all text-sm font-semibold hidden" aria-label="Remover imagem">Remover Imagem</button>
+                            </div>
+                            <input id="card-image-input" type="file" accept="image/*" class="hidden">
+                            <p id="card-image-path" class="text-sm text-gray-600 dark:text-gray-200 mt-2"></p>
+                            <img id="card-image-preview" class="card-image-preview hidden mt-2 rounded-lg max-h-40 object-contain border border-gray-200 dark:border-gray-600" alt="Pré-visualização da imagem selecionada">
+                        </div>
+                        <div class="form-section bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <label for="card-description" class="text-sm font-semibold text-gray-700 dark:text-gray-100 flex items-center gap-2 mb-2">
+                                <span class="material-icons">description</span>Descrição
+                            </label>
+                            <textarea id="card-description" class="w-full p-3 rounded-lg border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-red-600 dark:focus:ring-yellow-500 transition-all" placeholder="Digite uma breve descrição" maxlength="200" aria-describedby="card-description-counter"></textarea>
+                            <p id="card-description-counter" class="text-xs text-gray-500 dark:text-gray-400 mt-1">0/200 caracteres</p>
+                        </div>
+                    </div>
+                    <div id="postit-fields" class="md:col-span-2 space-y-6 hidden">
+                        <div class="form-section bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <label for="postit-text" class="text-sm font-semibold text-gray-700 dark:text-gray-100 flex items-center gap-2 mb-2">
+                                <span class="material-icons">note</span>Texto do Post-It
+                            </label>
+                            <textarea id="postit-text" class="w-full p-3 rounded-lg border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-red-600 dark:focus:ring-yellow-500 transition-all" placeholder="Digite o texto do Post-It" maxlength="500" aria-describedby="postit-text-counter"></textarea>
+                            <p id="postit-text-counter" class="text-xs text-gray-500 dark:text-gray-400 mt-1">0/500 caracteres</p>
+                        </div>
+                    </div>
+                    <input id="card-id" type="hidden">
+                    <div class="modal-actions flex justify-end gap-3 md:col-span-2">
+                        <button type="button" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-all flex items-center text-sm font-semibold transform hover:scale-105" onclick="cardCatalog.closeModal('card')" title="Cancelar" aria-label="Cancelar">
+                            <span class="material-icons mr-1 text-lg">cancel</span>Cancelar
+                        </button>
+                        <button type="submit" class="bg-red-600 dark:bg-yellow-500 text-white dark:text-gray-900 px-4 py-2 rounded-lg hover:bg-red-700 dark:hover:bg-yellow-600 transition-all flex items-center text-sm font-semibold transform hover:scale-105 shadow-md" title="Salvar cartão" aria-label="Salvar cartão">
+                            <span class="material-icons mr-1 text-lg">save</span>Salvar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Image Modal -->
+        <div id="image-modal" class="modal hidden" role="dialog" aria-labelledby="image-modal-title">
+            <div class="modal-content bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-4">
+                <button class="modal-close bg-gray-200 dark:bg-gray-700 hover:bg-red-600 dark:hover:bg-yellow-500 text-gray-800 dark:text-gray-200 rounded-full w-8 sm:w-10 h-8 sm:h-10 flex items-center justify-center transition-all" onclick="cardCatalog.closeModal('image')" aria-label="Fechar modal" title="Fechar">
+                    <span class="material-icons text-lg sm:text-xl">close</span>
+                </button>
+                <img id="image-modal-content" src="" alt="Imagem ampliada" class="w-full max-w-[90vw] max-h-[80vh] object-contain rounded-lg border-2 border-transparent dark:border-white/20">
+            </div>
+        </div>
+
+        <!-- Details Modal -->
+        <div id="details-modal" class="modal hidden" role="dialog" aria-labelledby="details-modal-title">
+            <div class="modal-content bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-3xl shadow-xl max-w-3xl w-full max-w-[95vw] p-4 sm:p-6 transform transition-all overflow-hidden">
+                <button class="modal-close bg-gray-200 dark:bg-gray-700 hover:bg-red-600 dark:hover:bg-yellow-500 text-gray-800 dark:text-gray-200 rounded-full w-8 sm:w-10 h-8 sm:h-10 flex items-center justify-center transition-all" onclick="cardCatalog.closeModal('details')" aria-label="Fechar modal" title="Fechar">
+                    <span class="material-icons text-lg sm:text-xl">close</span>
+                </button>
+                <div class="mb-4 sm:mb-6">
+                    <h2 id="details-modal-title" class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">Detalhes do Cartão</h2>
+                    <div class="flex justify-between items-center">
+                        <span id="details-name" class="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100"></span>
+                        <span id="details-tag" class="tag-badge text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-100 px-2 py-1 rounded"></span>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-1"><strong>Código:</strong> <span id="details-code"></span></p>
+                </div>
+                <div class="flex flex-col md:flex-row gap-4 sm:gap-6">
+                    <div class="w-full md:w-1/2">
+                        <img id="details-image" src="" alt="Imagem do cartão" class="w-full rounded-lg shadow-md object-cover" data-action="open-image" data-image="" title="Ampliar imagem" aria-label="Ampliar imagem do cartão">
+                    </div>
+                    <div class="w-full md:w-1/2 space-y-4 text-sm font-medium text-gray-600 dark:text-gray-200">
+                        <p class="flex items-center gap-2">
+                            <span class="material-icons text-red-600 dark:text-yellow-500">description</span>
+                            <strong class="text-gray-800 dark:text-gray-100">Descrição:</strong> <span id="details-description" class="text-gray-600 dark:text-gray-300"></span>
+                        </p>
+                        <p class="flex items-center gap-2">
+                            <span class="material-icons text-red-600 dark:text-yellow-500">play_circle</span>
+                            <strong class="text-gray-800 dark:text-gray-100">Tutorial:</strong> 
+                            <a id="details-youtube" href="#" target="_blank" class="inline-flex items-center text-red-600 dark:text-yellow-500 hover:text-red-700 dark:hover:text-yellow-600">
+                                <span class="material-icons text-sm mr-1">play_circle</span>Tutorial
+                            </a>
+                        </p>
+                        <p class="flex items-center gap-2">
+                            <span class="material-icons text-red-600 dark:text-yellow-500">folder</span>
+                            <strong class="text-gray-800 dark:text-gray-100">Caminho de Acesso:</strong> 
+                            <a id="details-access" href="#" target="_blank" class="inline-flex items-center text-red-600 dark:text-yellow-500 hover:text-red-700 dark:hover:text-yellow-600">
+                                <span class="material-icons text-sm mr-1">folder</span>Acessar
+                            </a>
+                        </p>
+                        <p class="flex items-center gap-2">
+                            <span class="material-icons text-red-600 dark:text-yellow-500">file_copy</span>
+                            <strong class="text-gray-800 dark:text-gray-100">Copiar Caminho:</strong> 
+                            <span id="details-path" class="text-gray-600 dark:text-gray-300"></span> 
+                            <button id="details-copy" class="inline-flex items-center text-red-600 dark:text-yellow-500 hover:text-red-700 dark:hover:text-yellow-600" title="Copiar caminho" aria-label="Copiar caminho">
+                                <span class="material-icons text-sm">file_copy</span>
+                            </button>
+                        </p>
+                        <p class="flex items-center gap-2">
+                            <span class="material-icons text-red-600 dark:text-yellow-500">event</span>
+                            <strong class="text-gray-800 dark:text-gray-100">Criado em:</strong> <span id="details-created" class="text-gray-600 dark:text-gray-300"></span>
+                        </p>
+                        <p class="flex items-center gap-2">
+                            <span class="material-icons text-red-600 dark:text-yellow-500">update</span>
+                            <strong class="text-gray-800 dark:text-gray-100">Atualizado em:</strong> <span id="details-last-edited" class="text-gray-600 dark:text-gray-300"></span>
+                        </p>
+                    </div>
+                </div>
+                <div class="modal-actions flex justify-end mt-4 sm:mt-6">
+                    <button class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-all flex items-center text-sm font-semibold" onclick="cardCatalog.closeModal('details')" title="Fechar" aria-label="Fechar">
+                        <span class="material-icons mr-1 text-lg">close</span>Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Modal -->
+        <div id="delete-modal" class="modal hidden" role="dialog" aria-labelledby="delete-modal-title">
+            <div class="modal-content bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-3xl shadow-xl max-w-md w-full max-w-[95vw] p-4 sm:p-6 transform transition-all">
+                <button class="modal-close bg-gray-200 dark:bg-gray-700 hover:bg-red-600 dark:hover:bg-yellow-500 text-gray-800 dark:text-gray-200 rounded-full w-8 sm:w-10 h-8 sm:h-10 flex items-center justify-center transition-all" onclick="cardCatalog.closeModal('delete')" aria-label="Fechar modal" title="Fechar">
+                    <span class="material-icons text-lg sm:text-xl">close</span>
+                </button>
+                <h2 id="delete-modal-title" class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 sm:mb-6">Confirmar Exclusão</h2>
+                <p class="text-gray-600 dark:text-gray-200 mb-4 sm:mb-6 text-sm font-medium">Tem certeza que deseja excluir o cartão "<span id="delete-card-name"></span>"? Esta ação não pode ser desfeita.</p>
+                <div class="modal-actions flex justify-end gap-3">
+                    <button class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-all flex items-center text-sm font-semibold" onclick="cardCatalog.closeModal('delete')" title="Cancelar" aria-label="Cancelar">
+                        <span class="material-icons mr-1 text-lg">cancel</span>Cancelar
+                    </button>
+                    <button id="confirm-delete" class="bg-red-600 dark:bg-yellow-500 text-white dark:text-gray-900 px-4 py-2 rounded-lg hover:bg-red-700 dark:hover:bg-yellow-600 transition-all flex items-center text-sm font-semibold" title="Excluir cartão" aria-label="Excluir cartão">
+                        <span class="material-icons mr-1 text-lg">delete</span>Excluir
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Modal -->
+        <div id="help-modal" class="modal hidden" role="dialog" aria-labelledby="help-modal-title">
+            <div class="modal-content bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-3xl shadow-xl max-w-3xl w-full max-w-[95vw] p-4 sm:p-6 transform transition-all">
+                <button class="modal-close bg-gray-200 dark:bg-gray-700 hover:bg-red-600 dark:hover:bg-yellow-500 text-gray-800 dark:text-gray-200 rounded-full w-8 sm:w-10 h-8 sm:h-10 flex items-center justify-center transition-all" onclick="cardCatalog.closeModal('help')" aria-label="Fechar modal" title="Fechar">
+                    <span class="material-icons text-lg sm:text-xl">close</span>
+                </button>
+                <h2 id="help-modal-title" class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 sm:mb-6">Ajuda</h2>
+                <p class="text-gray-600 dark:text-gray-200 mb-4 text-sm font-medium">Bem-vindo ao CATÁLOGO DE ARTE GNEWS! Siga estas instruções:</p>
+                <ul class="list-disc pl-6 text-gray-600 dark:text-gray-200 mb-4 sm:mb-6 text-sm font-medium">
+                    <li>Clique no botão <span class="material-icons inline text-lg">add</span> para adicionar um novo cartão (Normal ou Post-It).</li>
+                    <li>Use a pesquisa ou filtro por tag para encontrar cartões específicos.</li>
+                    <li>Clique no nome do cartão ou na imagem para ver detalhes completos (apenas para cartões normais).</li>
+                    <li>Assista a tutoriais clicando no ícone <span class="material-icons inline text-lg">play_circle</span> nos detalhes.</li>
+                    <li>Acesse pastas clicando no ícone <span class="material-icons inline text-lg">folder</span> nos detalhes.</li>
+                    <li>Edite, exclua ou duplique cartões usando os botões nos cartões.</li>
+                    <li>Exporte ou importe cartões usando os botões na barra flutuante à direita.</li>
+                    <li>Pressione <kbd class="bg-gray-100 dark:bg-gray-600 px-1.5 py-0.5 rounded">Ctrl + N</kbd> para adicionar, <kbd class="bg-gray-100 dark:bg-gray-600 px-1.5 py-0.5 rounded">Ctrl + S</kbd> ou <kbd class="bg-gray-100 dark:bg-gray-600 px-1.5 py-0.5 rounded">Enter</kbd> para salvar e <kbd class="bg-gray-100 dark:bg-gray-600 px-1.5 py-0.5 rounded">Esc</kbd> para fechar modais.</li>
+                </ul>
+                <div class="modal-actions flex justify-end">
+                    <button class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-all flex items-center text-sm font-semibold" onclick="cardCatalog.closeModal('help')" title="Fechar" aria-label="Fechar">
+                        <span class="material-icons mr-1 text-lg">close</span>Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast for Feedback -->
+        <div id="toast" class="toast hidden" role="alert" aria-live="assertive"></div>
+    </div>
+    <script src="script.js"></script>
+    <script>
+        // Forçar modo claro ao carregar a página
+        function forceLightMode() {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+            localStorage.setItem('darkMode', 'false');
+            updateDarkModeIcon();
+        }
+
+        // Atualizar ícone do modo escuro com base no modo
+        function updateDarkModeIcon() {
+            const darkModeToggle = document.querySelector('.dark-mode-toggle');
+            if (darkModeToggle) {
+                darkModeToggle.textContent = document.documentElement.classList.contains('dark') ? 'dark_mode' : 'light_mode';
+                darkModeToggle.classList.toggle('text-gray-900', document.documentElement.classList.contains('dark'));
+            }
+        }
+
+        // Executar ao carregar
+        document.addEventListener('DOMContentLoaded', () => {
+            forceLightMode();
+        });
+    </script>
+</body>
+</html>
