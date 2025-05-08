@@ -37,47 +37,7 @@
         }
         return gk_fileData[filename] || "";
         }
-        </script><script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-</script>
-<!DOCTYPE html>
+        </script><!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -126,7 +86,7 @@
                     </select>
                     <!-- Botões de modo escuro e ajuda -->
                     <button class="material-icons w-10 h-10 rounded-full hover:bg-white/30 dark:hover:bg-gray-800/30 dark:text-gray-900 dark-mode-toggle" onclick="cardCatalog.toggleDarkMode()" title="Alternar modo escuro">light_mode</button>
-                    <button class="material-icons w-10 h-10 rounded-full hover:bg-white/30 dark:hover:bg-gray-800/30 dark:text-gray-900" onclick="cardCatalog.openHelpModal()" title="Ajuda">help_outline</button>
+                    <button class="material-icons w-10 h-10 rounded-full hover:bg-white/30 dark:hover:bg-gray-８00/30 dark:text-gray-900" onclick="cardCatalog.openHelpModal()" title="Ajuda">help_outline</button>
                 </div>
             </div>
         </header>
@@ -148,7 +108,7 @@
                 <span class="material-icons">upload</span>
             </button>
             <!-- Botão para exportar cartões -->
-            <button class="bg-red-600 dark:bg-yellow-500 text-white dark:text-gray-900 w-12 h-12 rounded-full flex items-center justify-center hover:scale-110" onclick="cardCatalog.exportCards()" title="Exportar cartões">
+            <button class="bg-red-600 dark:bg-yellow-500 text-white dark:text-gray-900 w-12 h-12 rounded-full flex items-center justify-center hover:scale-110" onclick="cardCatalog.openExportModal()" title="Exportar cartões">
                 <span class="material-icons">download</span>
             </button>
             <!-- Botão para limpar todos os cartões -->
@@ -160,7 +120,7 @@
                 <span class="material-icons text-3xl">add</span>
             </button>
             <!-- Campo oculto para importar arquivo -->
-            <input id="import-input" type="file" accept=".json" class="hidden">
+            <input id="import-input" type="file" accept=".json" multiple class="hidden">
         </div>
 
         <!-- Modal para adicionar/editar cartão -->
@@ -234,7 +194,7 @@
                     <!-- Botões do modal -->
                     <div class="flex justify-end gap-3 md:col-span-2">
                         <button type="button" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600" onclick="cardCatalog.closeModal('card')" title="Cancelar">Cancelar</button>
-                        <button type="submit" class="bg-red-600 dark:bg-yellow-500 text-white dark:text-gray-900 px-4 py-2 rounded-lg hover:bg-red-700 dark:hover:bg-yellow-600" title="Salvar cartão">Salvar</button>
+                        <button type="submit" id="save-card-btn" class="bg-red-600 dark:bg-yellow-500 text-white dark:text-gray-900 px-4 py-2 rounded-lg hover:bg-red-700 dark:hover:bg-yellow-600" title="Salvar cartão">Salvar</button>
                     </div>
                 </form>
             </div>
@@ -250,63 +210,63 @@
             </div>
         </div>
 
-<!-- Modal para ver detalhes do cartão -->
-<div id="details-modal" class="modal hidden" role="dialog" aria-labelledby="details-modal-title" aria-describedby="details-modal-description">
-    <div class="modal-content bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-5xl p-8">
-        <!-- Botão de fechar -->
-        <button class="modal-close bg-gray-200 dark:bg-gray-700 hover:bg-red-600 dark:hover:bg-yellow-500 text-gray-800 dark:text-gray-200 rounded-full w-10 h-10 flex items-center justify-center" onclick="cardCatalog.closeModal('details')" title="Fechar" aria-label="Fechar modal de detalhes">
-            <span class="material-icons">close</span>
-        </button>
-        <!-- Título do modal -->
-        <h2 id="details-modal-title" class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6">Detalhes do Cartão</h2>
-        <div id="details-modal-description" class="flex flex-col lg:flex-row gap-8">
-            <!-- Seção da imagem -->
-            <div class="w-full lg:w-1/2">
-                <img id="details-image" src="" alt="Imagem do cartão" class="w-full rounded-lg max-h-[400px] object-cover cursor-pointer" data-action="open-image" aria-label="Imagem do cartão, clique para ampliar">
-            </div>
-            <!-- Seção de informações -->
-            <div class="w-full lg:w-1/2 flex flex-col gap-6">
-                <div class="flex justify-between items-center">
-                    <span id="details-name" class="text-2xl font-semibold text-gray-800 dark:text-gray-100 truncate" aria-label="Nome do cartão"></span>
-                    <span id="details-code" class="text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-100 px-3 py-1 rounded-lg" aria-label="Código do cartão"></span>
-                </div>
-                <div class="space-y-4 text-gray-600 dark:text-gray-200">
-                    <p class="flex items-start gap-3">
-                        <span class="material-icons text-red-600 dark:text-yellow-500">description</span>
-                        <span>
-                            <strong>Descrição:</strong>
-                            <span id="details-description" class="description-container block bg-gray-50 dark:bg-gray-700 p-3 rounded-lg" aria-label="Descrição do cartão"></span>
-                        </span>
-                    </p>
-                    <p class="flex items-center gap-3">
-                        <span class="material-icons text-red-600 dark:text-yellow-500">play_circle</span>
-                        <span><strong>Tutorial:</strong> <a id="details-youtube" href="#" target="_blank" class="text-red-600 dark:text-yellow-500 hover:underline" aria-label="Link para o tutorial no YouTube">Assistir Tutorial</a></span>
-                    </p>
-                    <p class="flex items-center gap-3">
-                        <span class="material-icons text-red-600 dark:text-yellow-500">event</span>
-                        <strong>Criado em:</strong> <span id="details-created" aria-label="Data de criação do cartão"></span>
-                    </p>
-                    <p class="flex items-center gap-3">
-                        <span class="material-icons text-red-600 dark:text-yellow-500">update</span>
-                        <strong>Atualizado em:</strong> <span id="details-last-edited" aria-label="Data da última edição do cartão"></span>
-                    </p>
-                </div>
-                <!-- Botões de ação -->
-                <div class="modal-actions flex flex-wrap gap-3 mt-6">
-                    <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2" data-action="edit-card" data-id="" title="Editar cartão" aria-label="Editar cartão">
-                        <span class="material-icons">edit</span> Editar
-                    </button>
-                    <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2" data-action="duplicate-card" data-id="" title="Duplicar cartão" aria-label="Duplicar cartão">
-                        <span class="material-icons">content_copy</span> Duplicar
-                    </button>
-                    <button class="bg-red-600 dark:bg-yellow-500 text-white dark:text-gray-900 px-4 py-2 rounded-lg hover:bg-red-700 dark:hover:bg-yellow-600 flex items-center gap-2" data-action="delete-card" data-id="" title="Excluir cartão" aria-label="Excluir cartão">
-                        <span class="material-icons">delete</span> Excluir
-                    </button>
+        <!-- Modal para ver detalhes do cartão -->
+        <div id="details-modal" class="modal hidden" role="dialog" aria-labelledby="details-modal-title" aria-describedby="details-modal-description">
+            <div class="modal-content bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-5xl p-8">
+                <!-- Botão de fechar -->
+                <button class="modal-close bg-gray-200 dark:bg-gray-700 hover:bg-red-600 dark:hover:bg-yellow-500 text-gray-800 dark:text-gray-200 rounded-full w-10 h-10 flex items-center justify-center" onclick="cardCatalog.closeModal('details')" title="Fechar" aria-label="Fechar modal de detalhes">
+                    <span class="material-icons">close</span>
+                </button>
+                <!-- Título do modal -->
+                <h2 id="details-modal-title" class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6">Detalhes do Cartão</h2>
+                <div id="details-modal-description" class="flex flex-col lg:flex-row gap-8">
+                    <!-- Seção da imagem -->
+                    <div class="w-full lg:w-1/2">
+                        <img id="details-image" src="" alt="Imagem do cartão" class="w-full rounded-lg max-h-[400px] object-cover cursor-pointer" data-action="open-image" aria-label="Imagem do cartão, clique para ampliar">
+                    </div>
+                    <!-- Seção de informações -->
+                    <div class="w-full lg:w-1/2 flex flex-col gap-6">
+                        <div class="flex justify-between items-center">
+                            <span id="details-name" class="text-2xl font-semibold text-gray-800 dark:text-gray-100 truncate" aria-label="Nome do cartão"></span>
+                            <span id="details-code" class="text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-100 px-3 py-1 rounded-lg" aria-label="Código do cartão"></span>
+                        </div>
+                        <div class="space-y-4 text-gray-600 dark:text-gray-200">
+                            <p class="flex items-start gap-3">
+                                <span class="material-icons text-red-600 dark:text-yellow-500">description</span>
+                                <span>
+                                    <strong>Descrição:</strong>
+                                    <span id="details-description" class="description-container block bg-gray-50 dark:bg-gray-700 p-3 rounded-lg" aria-label="Descrição do cartão"></span>
+                                </span>
+                            </p>
+                            <p class="flex items-center gap-3">
+                                <span class="material-icons text-red-600 dark:text-yellow-500">play_circle</span>
+                                <span><strong>Tutorial:</strong> <a id="details-youtube" href="#" target="_blank" class="text-red-600 dark:text-yellow-500 hover:underline" aria-label="Link para o tutorial no YouTube">Assistir Tutorial</a></span>
+                            </p>
+                            <p class="flex items-center gap-3">
+                                <span class="material-icons text-red-600 dark:text-yellow-500">event</span>
+                                <strong>Criado em:</strong> <span id="details-created" aria-label="Data de criação do cartão"></span>
+                            </p>
+                            <p class="flex items-center gap-3">
+                                <span class="material-icons text-red-600 dark:text-yellow-500">update</span>
+                                <strong>Atualizado em:</strong> <span id="details-last-edited" aria-label="Data da última edição do cartão"></span>
+                            </p>
+                        </div>
+                        <!-- Botões de ação -->
+                        <div class="modal-actions flex flex-wrap gap-3 mt-6">
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2" data-action="edit-card" data-id="" title="Editar cartão" aria-label="Editar cartão">
+                                <span class="material-icons">edit</span> Editar
+                            </button>
+                            <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2" data-action="duplicate-card" data-id="" title="Duplicar cartão" aria-label="Duplicar cartão">
+                                <span class="material-icons">content_copy</span> Duplicar
+                            </button>
+                            <button class="bg-red-600 dark:bg-yellow-500 text-white dark:text-gray-900 px-4 py-2 rounded-lg hover:bg-red-700 dark:hover:bg-yellow-600 flex items-center gap-2" data-action="delete-card" data-id="" title="Excluir cartão" aria-label="Excluir cartão">
+                                <span class="material-icons">delete</span> Excluir
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
 
         <!-- Modal para confirmar exclusão -->
         <div id="delete-modal" class="modal hidden" role="dialog" aria-labelledby="delete-modal-title">
@@ -319,6 +279,28 @@
                 <div class="flex justify-end gap-3">
                     <button class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600" onclick="cardCatalog.closeModal('delete')" title="Cancelar">Cancelar</button>
                     <button id="confirm-delete" class="bg-red-600 dark:bg-yellow-500 text-white dark:text-gray-900 px-4 py-2 rounded-lg hover:bg-red-700 dark:hover:bg-yellow-600" title="Excluir cartão">Excluir</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para opções de exportação -->
+        <div id="export-modal" class="modal hidden" role="dialog" aria-labelledby="export-modal-title">
+            <div class="modal-content bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md p-6">
+                <button class="modal-close bg-gray-200 dark:bg-gray-700 hover:bg-red-600 dark:hover:bg-yellow-500 text-gray-800 dark:text-gray-200 rounded-full w-10 h-10 flex items-center justify-center" onclick="cardCatalog.closeModal('export')" title="Fechar">
+                    <span class="material-icons">close</span>
+                </button>
+                <h2 id="export-modal-title" class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Exportar Cartões</h2>
+                <p class="text-gray-600 dark:text-gray-200 mb-6">Escolha como deseja exportar os cartões:</p>
+                <div class="flex flex-col gap-3">
+                    <button class="bg-red-600 dark:bg-yellow-500 text-white dark:text-gray-900 px-4 py-2 rounded-lg hover:bg-red-700 dark:hover:bg-yellow-600 flex items-center gap-2" onclick="cardCatalog.exportCards('complete')" title="Exportar todos os cartões em um único arquivo JSON">
+                        <span class="material-icons">archive</span> Exportar Cards Completos
+                    </button>
+                    <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2" onclick="cardCatalog.exportCards('separate')" title="Exportar cada cartão em um arquivo JSON separado">
+                        <span class="material-icons">file_copy</span> Exportar Cards Separados
+                    </button>
+                </div>
+                <div class="flex justify-end mt-6">
+                    <button class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600" onclick="cardCatalog.closeModal('export')" title="Cancelar">Cancelar</button>
                 </div>
             </div>
         </div>
@@ -349,13 +331,15 @@
         <!-- Notificação para mensagens -->
         <div id="toast" class="toast hidden" role="alert"></div>
     </div>
+
+    
     <!-- Carrega a biblioteca para importar/exportar arquivos -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js" defer></script>
+
+
     <!-- Carrega os scripts divididos -->
     <script src="card-catalog-core.js" defer></script>
     <script src="card-catalog-ui.js" defer></script>
     <script src="card-catalog-data.js" defer></script>
-
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93accaafdefe53c7',t:'MTc0NjQxMTk3My4wMDAwMDA='};var a=document.createElement('script');a.nonce=''';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>

@@ -79,92 +79,164 @@ class CardCatalogUI extends CardCatalog {
         lastUpdated.textContent = `Última atualização: ${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR')}`;
     }
 
-    openCardModal(cardId = null) {
-        this.cardForm.reset();
-        document.getElementById('card-id').value = cardId || '';
-        document.getElementById('card-name').classList.remove('error');
-        document.getElementById('card-name-error').classList.add('hidden');
-        document.getElementById('card-youtube').classList.remove('error');
-        document.getElementById('card-youtube-error').classList.add('hidden');
-        document.getElementById('card-access').classList.remove('error');
-        document.getElementById('card-access-error').classList.add('hidden');
-        document.getElementById('card-description-counter').textContent = '0/200 caracteres';
-        document.getElementById('card-image-preview').classList.add('hidden');
-        document.getElementById('card-image-path').textContent = '';
-        document.getElementById('card-image-input').dataset.url = '';
-        document.getElementById('remove-image-btn').classList.add('hidden');
-        // Set modal title based on whether editing or adding
+    openCardModal(cardId = '') {
+        console.log('Abrindo modal de cartão', {
+            cardId,
+            timestamp: new Date().toISOString(),
+            modalAlreadyOpen: this.cardModal.classList.contains('show')
+        });
+    
+        if (!this.cardModal) {
+            console.error('cardModal não encontrado no DOM.');
+            this.showToast('error', 'Erro interno: modal de cartão não encontrado.');
+            return;
+        }
+    
+        if (this.cardModal.classList.contains('show')) {
+            console.log('Modal já aberto, evitando reinicialização desnecessária');
+            return;
+        }
+    
+        this.cardModal.classList.add('show');
+        const cardForm = document.getElementById('card-form');
+        if (!cardForm) {
+            console.error('card-form não encontrado no DOM.');
+            this.showToast('error', 'Erro interno: formulário de cartão não encontrado.');
+            return;
+        }
+        cardForm.reset();
+    
+        const cardIdInput = document.getElementById('card-id');
+        if (cardIdInput) {
+            cardIdInput.value = cardId;
+        } else {
+            console.warn('card-id não encontrado no DOM.');
+        }
+    
+        const errorElements = ['card-name-error', 'card-youtube-error', 'card-access-error'];
+        errorElements.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        });
+    
+        const descriptionCounter = document.getElementById('card-description-counter');
+        if (descriptionCounter) {
+            descriptionCounter.textContent = '0/200 caracteres';
+        }
+    
+        const imagePreview = document.getElementById('card-image-preview');
+        const imagePath = document.getElementById('card-image-path');
+        const imageInput = document.getElementById('card-image-input');
+        const removeImageBtn = document.getElementById('remove-image-btn');
+        if (imagePreview) imagePreview.classList.add('hidden');
+        if (imagePath) imagePath.textContent = '';
+        if (imageInput) {
+            imageInput.dataset.url = '';
+            imageInput.value = '';
+        }
+        if (removeImageBtn) removeImageBtn.classList.add('hidden');
+    
         const modalTitle = document.getElementById('modal-title');
-        modalTitle.textContent = cardId ? 'Editar Cartão' : 'Adicionar Cartão';
+        if (modalTitle) {
+            modalTitle.textContent = cardId ? 'Editar Cartão' : 'Adicionar Cartão';
+        } else {
+            console.warn('modal-title não encontrado no DOM.');
+        }
 
         if (cardId) {
             const card = this.cards.find(c => c.id === cardId);
             if (card) {
-                document.getElementById('card-name').value = card.name;
-                document.getElementById('card-tag').value = card.tag;
-                document.getElementById('card-youtube').value = card.youtube;
-                document.getElementById('card-access').value = card.access;
-                document.getElementById('card-description').value = card.description;
-                document.getElementById('card-description-counter').textContent = `${card.description.length}/200 caracteres`;
-                if (card.image) {
-                    document.getElementById('card-image-preview').src = card.image;
-                    document.getElementById('card-image-preview').classList.remove('hidden');
-                    document.getElementById('card-image-path').textContent = 'Imagem selecionada';
-                    document.getElementById('card-image-input').dataset.url = card.image;
-                    document.getElementById('remove-image-btn').classList.remove('hidden');
+                console.log('Preenchendo modal com dados do cartão:', card);
+                const nameInput = document.getElementById('card-name');
+                const tagInput = document.getElementById('card-tag');
+                const youtubeInput = document.getElementById('card-youtube');
+                const accessInput = document.getElementById('card-access');
+                const descriptionInput = document.getElementById('card-description');
+
+                if (nameInput) nameInput.value = card.name || '';
+                if (tagInput) tagInput.value = card.tag || 'MKT';
+                if (youtubeInput) youtubeInput.value = card.youtube || '';
+                if (accessInput) accessInput.value = card.access || '';
+                if (descriptionInput) {
+                    descriptionInput.value = card.description || '';
+                    if (descriptionCounter) {
+                        descriptionCounter.textContent = `${card.description?.length || 0}/200 caracteres`;
+                    }
                 }
+
+                if (card.image && imagePreview && imageInput && imagePath && removeImageBtn) {
+                    imagePreview.src = card.image;
+                    imagePreview.classList.remove('hidden');
+                    imagePath.textContent = 'Imagem carregada';
+                    imageInput.dataset.url = card.image;
+                    removeImageBtn.classList.remove('hidden');
+                }
+            } else {
+                console.warn('Cartão não encontrado para ID:', cardId);
+                this.showToast('error', 'Cartão não encontrado.');
+                this.closeModal('card');
             }
         }
-
-        this.cardModal.classList.add('show');
     }
 
-// Função para quebrar texto a cada 40 caracteres, respeitando palavras inteiras
-breakTextAtInterval(text, interval = 50) {
-    if (!text) return text;
-    const words = text.split(' ');
-    let currentLine = '';
-    const lines = [];
-    
-    for (const word of words) {
-        if ((currentLine + (currentLine ? ' ' : '') + word).length <= interval) {
-            currentLine += (currentLine ? ' ' : '') + word;
-        } else {
-            if (currentLine) lines.push(currentLine);
-            currentLine = word;
+    // Função para quebrar texto a cada 50 caracteres, respeitando palavras inteiras
+    breakTextAtInterval(text, interval = 50) {
+        if (!text) return text;
+        const words = text.split(' ');
+        let currentLine = '';
+        const lines = [];
+        
+        for (const word of words) {
+            if ((currentLine + (currentLine ? ' ' : '') + word).length <= interval) {
+                currentLine += (currentLine ? ' ' : '') + word;
+            } else {
+                if (currentLine) lines.push(currentLine);
+                currentLine = word;
+            }
         }
+        if (currentLine) lines.push(currentLine);
+        
+        return lines.join('\n');
     }
-    if (currentLine) lines.push(currentLine);
-    
-    return lines.join('\n');
-}
 
-openDetailsModal(cardId) {
-    const card = this.cards.find(c => c.id === cardId);
-    if (!card) return;
+    openDetailsModal(cardId) {
+        const card = this.cards.find(c => c.id === cardId);
+        if (!card) return;
 
-    document.getElementById('details-name').textContent = this.escapeHTML(card.name);
-    document.getElementById('details-code').textContent = this.escapeHTML(card.code || 'Sem Código');
-    // Aplica quebra de linha a cada 40 caracteres na descrição
-    const formattedDescription = this.breakTextAtInterval(card.description || 'Sem descrição');
-    document.getElementById('details-description').textContent = this.escapeHTML(formattedDescription);
-    const youtubeLink = document.getElementById('details-youtube');
-    youtubeLink.href = card.youtube || '#';
-    youtubeLink.style.display = card.youtube ? 'inline-flex' : 'none';
-    document.getElementById('details-created').textContent = new Date(card.created).toLocaleString('pt-BR');
-    document.getElementById('details-last-edited').textContent = new Date(card.lastEdited).toLocaleString('pt-BR');
-    const detailsImage = document.getElementById('details-image');
-    detailsImage.src = card.image || 'https://via.placeholder.com/400x300';
-    detailsImage.dataset.image = card.image || '';
-    document.querySelectorAll('[data-action="open-image"]').forEach(el => {
-        el.dataset.image = card.image || '';
-    });
+        document.getElementById('details-name').textContent = this.escapeHTML(card.name);
+        document.getElementById('details-code').textContent = this.escapeHTML(card.code || 'Sem Código');
+        // Aplica quebra de linha a cada 40 caracteres na descrição
+        const formattedDescription = this.breakTextAtInterval(card.description || 'Sem descrição');
+        document.getElementById('details-description').textContent = this.escapeHTML(formattedDescription);
+        const youtubeLink = document.getElementById('details-youtube');
+        youtubeLink.href = card.youtube || '#';
+        youtubeLink.style.display = card.youtube ? 'inline-flex' : 'none';
+        document.getElementById('details-created').textContent = new Date(card.created).toLocaleString('pt-BR');
+        document.getElementById('details-last-edited').textContent = new Date(card.lastEdited).toLocaleString('pt-BR');
+        const detailsImage = document.getElementById('details-image');
+        detailsImage.src = card.image || 'https://via.placeholder.com/400x300';
+        detailsImage.dataset.image = card.image || '';
+        document.querySelectorAll('[data-action="open-image"]').forEach(el => {
+            el.dataset.image = card.image || '';
+        });
 
-    const modalActions = document.querySelector('#details-modal .modal-actions');
-    modalActions.innerHTML = ''; // No buttons in details modal
+        const modalActions = document.querySelector('#details-modal .modal-actions');
+        modalActions.innerHTML = ''; // No buttons in details modal
 
-    this.detailsModal.classList.add('show');
-}
+        this.detailsModal.classList.add('show');
+    }
+
+    openImageModal(imageUrl) {
+        console.log('Abrindo modal de imagem com URL:', imageUrl);
+        if (!this.imageModal || !this.imageModalContent) {
+            console.error('imageModal ou imageModalContent não encontrado no DOM.');
+            this.showToast('error', 'Erro interno: modal de imagem não encontrado.');
+            return;
+        }
+        this.imageModalContent.src = imageUrl;
+        this.imageModal.classList.add('show');
+        this.imageModal.setAttribute('aria-hidden', 'false');
+    }
 
     openDeleteModal(cardId) {
         const card = this.cards.find(c => c.id === cardId);

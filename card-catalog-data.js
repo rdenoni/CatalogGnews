@@ -4,8 +4,9 @@ class CardCatalogData extends CardCatalogUI {
         this.cards = [];
         this.isEventListenersInitialized = false;
         this.lastDuplicateTime = 0;
+        this.lastSaveTime = 0;
         this.initializeData();
-        this.initializeEventListeners();
+
     }
 
     initializeData() {
@@ -46,6 +47,8 @@ class CardCatalogData extends CardCatalogUI {
         this.updateLastUpdated();
     }
 
+
+// Carrega cards no inicio
     getStorageSize() {
         if (typeof localStorage === 'undefined') return '0 MB';
         const dataStr = localStorage.getItem('cards') || '';
@@ -59,7 +62,6 @@ class CardCatalogData extends CardCatalogUI {
             return;
         }
         this.isEventListenersInitialized = true;
-
         this.cardForm.addEventListener('submit', (e) => this.saveCard(e));
 
         this.searchInput.addEventListener('input', () => this.filterCards());
@@ -72,11 +74,38 @@ class CardCatalogData extends CardCatalogUI {
         this.tagFilter.addEventListener('change', () => this.filterCards());
         this.sortOrder.addEventListener('change', () => this.filterCards());
 
-        document.getElementById('select-image-btn').addEventListener('click', () => {
-            document.getElementById('card-image-input').click();
+        const selectImageBtn = document.getElementById('select-image-btn');
+        selectImageBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Botão Selecionar Imagem clicado', {
+                timestamp: new Date().toISOString(),
+                target: e.target.id,
+                isTrusted: e.isTrusted // Indicates if the event was triggered by a user
+            });
+            const imageInput = document.getElementById('card-image-input');
+            imageInput.value = '';
+            console.log('Chamando imageInput.click()');
+            try {
+                imageInput.click();
+            } catch (err) {
+                console.error('Erro ao chamar imageInput.click():', err.message);
+            }
+            console.log('imageInput.click() executado');
         });
-        document.getElementById('card-image-input').addEventListener('change', (e) => this.handleImageUpload(e));
+
+        document.getElementById('card-image-input').addEventListener('change', (e) => {
+            console.log('Evento change disparado no input de imagem', {
+                timestamp: new Date().toISOString(),
+                files: e.target.files.length,
+                isTrusted: e.isTrusted
+            });
+            this.handleImageUpload(e);
+        });
+
+
         document.getElementById('remove-image-btn').addEventListener('click', () => this.removeImage());
+
 
         document.getElementById('card-description').addEventListener('input', (e) => {
             const counter = document.getElementById('card-description-counter');
@@ -85,32 +114,50 @@ class CardCatalogData extends CardCatalogUI {
 
         this.importInput.addEventListener('change', (e) => this.importCards(e));
 
+        if (!this.cardsContainer) {
+            console.error('cardsContainer não encontrado no DOM.');
+            this.showToast('error', 'Erro interno: contêiner de cartões não encontrado.');
+            return;
+        }
+
         this.cardsContainer.addEventListener('click', (e) => {
-            const action = e.target.closest('[data-action]')?.dataset.action;
-            const id = e.target.closest('[data-id]')?.dataset.id;
+            console.log('Clique em cardsContainer, elemento:', e.target);
+            const actionElement = e.target.closest('[data-action]');
+            const idElement = e.target.closest('[data-id]');
+            const action = actionElement?.dataset.action;
+            const id = idElement?.dataset.id;
             const image = e.target.closest('[data-image]')?.dataset.image;
             const access = e.target.closest('[data-access]')?.dataset.access;
 
+            console.log('Ação detectada:', action, 'ID do cartão:', id);
+
             if (action === 'open-details' && id) {
                 e.stopPropagation();
+                console.log('Abrindo modal de detalhes para ID:', id);
                 this.openDetailsModal(id);
             } else if (action === 'edit-card' && id) {
                 e.stopPropagation();
+                console.log('Abrindo modal de edição para cartão ID:', id);
                 this.openCardModal(id);
-            } else if (action === 'open-image' && image) {
-                e.stopPropagation();
-                this.imageModalContent.src = image;
-                this.imageModal.classList.add('show');
             } else if (action === 'copy-access' && access) {
                 e.stopPropagation();
+                console.log('Copiando acesso:', access);
                 navigator.clipboard.writeText(access);
                 this.showToast('success', 'Caminho copiado!');
             } else if (action === 'duplicate-card' && id) {
                 e.stopPropagation();
+                console.log('Duplicando cartão ID:', id);
                 this.duplicateCard(id);
             } else if (action === 'delete-card' && id) {
                 e.stopPropagation();
+                console.log('Abrindo modal de exclusão para ID:', id);
                 this.openDeleteModal(id);
+            } else if (action === 'open-image' && image) {
+                e.stopPropagation();
+                console.log('Abrindo modal de imagem:', image);
+                this.openImageModal(image);
+            } else {
+                console.log('Nenhuma ação correspondente encontrada para o clique.');
             }
         });
 
@@ -130,11 +177,18 @@ class CardCatalogData extends CardCatalogUI {
                     this.closeModal('help');
                 } else if (this.imageModal.classList.contains('show')) {
                     this.closeModal('image');
+                } else if (this.exportModal.classList.contains('show')) {
+                    this.closeModal('export');
                 }
             }
             if ((e.ctrlKey && e.key === 's') || e.key === 'Enter') {
                 if (this.cardModal.classList.contains('show')) {
                     e.preventDefault();
+                    const now = Date.now();
+                    if (this.lastSaveTime && now - this.lastSaveTime < 500) {
+                        console.log('Ação de salvamento por teclado ignorada devido a debounce.');
+                        return;
+                    }
                     this.cardForm.dispatchEvent(new Event('submit'));
                 }
             }
@@ -144,7 +198,7 @@ class CardCatalogData extends CardCatalogUI {
             if (e.target.classList.contains('modal') && e.target.classList.contains('show')) {
                 const modalType = e.target.id.split('-')[0];
                 this.closeModal(modalType);
-             }
+            }
         });
     }
 
@@ -168,6 +222,17 @@ class CardCatalogData extends CardCatalogUI {
 
     saveCard(e) {
         e.preventDefault();
+        const saveButton = document.getElementById('save-card-btn');
+        saveButton.disabled = true;
+
+        const now = Date.now();
+        if (this.lastSaveTime && now - this.lastSaveTime < 500) {
+            console.log('Ação de salvamento ignorada devido a debounce.');
+            saveButton.disabled = false;
+            return;
+        }
+        this.lastSaveTime = now;
+
         const name = document.getElementById('card-name').value.trim().toUpperCase();
         const tag = document.getElementById('card-tag').value || 'MKT';
         const youtube = document.getElementById('card-youtube').value.trim();
@@ -182,18 +247,21 @@ class CardCatalogData extends CardCatalogUI {
             this.showToast('error', 'O nome do cartão é obrigatório.');
             document.getElementById('card-name').classList.add('error');
             document.getElementById('card-name-error').classList.remove('hidden');
+            saveButton.disabled = false;
             return;
         }
         if (youtube && !this.isValidUrl(youtube, 'youtube')) {
             this.showToast('error', 'URL do YouTube inválida.');
             document.getElementById('card-youtube').classList.add('error');
             document.getElementById('card-youtube-error').classList.remove('hidden');
+            saveButton.disabled = false;
             return;
         }
         if (access && !this.isValidUrl(access)) {
             this.showToast('error', 'URL de acesso inválida.');
             document.getElementById('card-access').classList.add('error');
             document.getElementById('card-access-error').classList.remove('hidden');
+            saveButton.disabled = false;
             return;
         }
 
@@ -218,6 +286,7 @@ class CardCatalogData extends CardCatalogUI {
             } else {
                 console.warn('ID do cartão não encontrado para atualização:', cardId);
                 this.showToast('error', 'Erro ao atualizar cartão: ID não encontrado.');
+                saveButton.disabled = false;
                 return;
             }
         } else {
@@ -232,6 +301,7 @@ class CardCatalogData extends CardCatalogUI {
                 if (sizeInMB > 10) {
                     console.warn('Tamanho dos dados excede 10MB:', sizeInMB);
                     this.showToast('error', `Os dados são muito grandes (${sizeInMB.toFixed(2)} MB). Exporte os cartões, remova imagens ou cartões, e tente novamente.`);
+                    saveButton.disabled = false;
                     return;
                 }
                 localStorage.setItem('cards', dataStr);
@@ -239,6 +309,7 @@ class CardCatalogData extends CardCatalogUI {
             } catch (err) {
                 console.error('Erro ao salvar no localStorage:', err);
                 this.showToast('error', 'Erro ao salvar no armazenamento local: ' + err.message);
+                saveButton.disabled = false;
                 return;
             }
         }
@@ -248,6 +319,7 @@ class CardCatalogData extends CardCatalogUI {
         this.updateLastUpdated();
         this.closeModal('card');
         this.showToast('success', cardId ? 'Cartão atualizado com sucesso!' : 'Cartão adicionado com sucesso!');
+        saveButton.disabled = false;
     }
 
     clearAllCards() {
@@ -357,33 +429,6 @@ class CardCatalogData extends CardCatalogUI {
         }
     }
 
-    handleImageUpload(e) {
-        const file = e.target.files[0];
-        if (file) {
-            if (file.size > 500 * 1024) { // Limite de 500KB
-                this.showToast('error', 'A imagem é muito grande. Use uma imagem menor que 500KB.');
-                return;
-            }
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                const maxWidth = 800; // Reduzir resolução
-                const scale = Math.min(maxWidth / img.width, 1);
-                canvas.width = img.width * scale;
-                canvas.height = img.height * scale;
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // Compressão JPEG 70%
-                document.getElementById('card-image-preview').src = dataUrl;
-                document.getElementById('card-image-preview').classList.remove('hidden');
-                document.getElementById('card-image-path').textContent = file.name;
-                e.target.dataset.url = dataUrl;
-                document.getElementById('remove-image-btn').classList.remove('hidden');
-                console.log('Tamanho da imagem comprimida:', (dataUrl.length * 2) / (1024 * 1024), 'MB');
-            };
-            img.src = URL.createObjectURL(file);
-        }
-    }
 
     removeImage() {
         document.getElementById('card-image-input').value = '';
@@ -393,97 +438,201 @@ class CardCatalogData extends CardCatalogUI {
         document.getElementById('remove-image-btn').classList.add('hidden');
     }
 
-    exportCards() {
+    openExportModal() {
+        this.exportModal = document.getElementById('export-modal');
+        this.exportModal.classList.add('show');
+    }
+
+    async exportCards(mode = 'complete') {
         if (!Array.isArray(this.cards) || this.cards.length === 0) {
             this.showToast('error', 'Nenhum cartão válido para exportar.');
             return;
         }
         try {
-            const dataStr = JSON.stringify(this.cards, null, 2);
-            const blob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `cards_export_${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            this.showToast('success', 'Cartões exportados com sucesso!');
+            if (mode === 'complete') {
+                // Exportar todos os cartões em um único arquivo JSON
+                const dataStr = JSON.stringify(this.cards, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `cards_export_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                this.showToast('success', 'Cartões exportados com sucesso!');
+            } else if (mode === 'separate') {
+                // Exportar cada cartão em um arquivo JSON separado com uma única confirmação
+                if (!window.showDirectoryPicker) {
+                    // Fallback para navegadores sem suporte à API showDirectoryPicker
+                    this.cards.forEach(card => {
+                        const sanitizedName = card.name.replace(/[^a-zA-Z0-9\s-_]/g, '').replace(/\s+/g, '_');
+                        const fileName = `${card.tag}_${card.id}_${sanitizedName}.json`;
+                        const dataStr = JSON.stringify(card, null, 2);
+                        const blob = new Blob([dataStr], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = fileName;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    });
+                    this.showToast('warning', `${this.cards.length} cartão(ões) exportado(s) individualmente. Use um navegador moderno para salvar em uma única pasta.`);
+                } else {
+                    // Usar showDirectoryPicker para escolher um diretório
+                    const dirHandle = await window.showDirectoryPicker();
+                    for (const card of this.cards) {
+                        const sanitizedName = card.name.replace(/[^a-zA-Z0-9\s-_]/g, '').replace(/\s+/g, '_');
+                        const fileName = `${card.tag}_${card.id}_${sanitizedName}.json`;
+                        const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+                        const writable = await fileHandle.createWritable();
+                        const dataStr = JSON.stringify(card, null, 2);
+                        await writable.write(dataStr);
+                        await writable.close();
+                    }
+                    this.showToast('success', `${this.cards.length} cartão(ões) exportado(s) para a pasta selecionada com sucesso!`);
+                }
+            } else {
+                throw new Error('Modo de exportação inválido.');
+            }
+            this.closeModal('export');
         } catch (err) {
+            console.error('Erro ao exportar cartões:', err);
             this.showToast('error', 'Erro ao exportar cartões: ' + err.message);
         }
     }
 
-    importCards(e) {
+
+    handleImageUpload(e) {
         const file = e.target.files[0];
-        if (!file) return;
+        if (file) {
+            console.log('Iniciando carregamento de imagem:', file.name, 'Tamanho:', file.size, 'Tipo:', file.type);
+            const startTime = performance.now();
+            const reader = new FileReader();
+            reader.onload = () => {
+                const dataUrl = reader.result;
+                document.getElementById('card-image-preview').src = dataUrl;
+                document.getElementById('card-image-preview').classList.remove('hidden');
+                document.getElementById('card-image-path').textContent = file.name;
+                e.target.dataset.url = dataUrl;
+                document.getElementById('remove-image-btn').classList.remove('hidden');
+                const endTime = performance.now();
+                console.log('Imagem carregada:', file.name, 'Tamanho:', (dataUrl.length * 2 / (1024 * 1024)).toFixed(2), 'MB', 'Tipo:', file.type, 'Tempo:', (endTime - startTime), 'ms');
+            };
+            reader.onerror = () => {
+                console.error('Erro ao carregar imagem:', file.name);
+                this.showToast('error', 'Erro ao carregar a imagem. Tente novamente.');
+            };
+            reader.readAsDataURL(file);
+        }
+    }
 
-        const reader = new FileReader();
-        reader.onload = () => {
-            try {
-                console.log('Conteúdo do arquivo:', reader.result);
-                const parsedData = JSON.parse(reader.result);
-                let importedCards = parsedData;
-                if (!Array.isArray(parsedData) && parsedData.cards && Array.isArray(parsedData.cards)) {
-                    importedCards = parsedData.cards;
-                }
-                if (!Array.isArray(importedCards)) {
-                    throw new Error('Formato inválido: o arquivo deve conter um array de cartões.');
-                }
 
-                let validCardsCount = 0;
-                importedCards.forEach(card => {
-                    if (!card.id || !card.name || !card.tag) {
-                        console.log('Cartão inválido ignorado:', card);
-                        return;
-                    }
-
-                    if (!card.code) {
-                        card.code = this.generateCardCode(card.tag);
-                    }
-
-                    card.created = card.created || new Date().toISOString();
-                    card.lastEdited = new Date().toISOString();
-
-                    const existing = this.cards.find(c => c.id === card.id);
-                    if (existing) {
-                        card.id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-                        card.code = this.generateCardCode(card.tag);
-                    }
-
-                    this.cards.push(card);
-                    validCardsCount++;
-                });
-
-                if (validCardsCount === 0) {
-                    throw new Error('Nenhum cartão válido encontrado no arquivo.');
-                }
-
-                if (typeof localStorage !== 'undefined') {
+    importCards(e) {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+    
+        let validCardsCount = 0;
+        let filesProcessed = 0;
+        const totalFiles = files.length;
+    
+        const processFile = (file) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
                     try {
-                        const dataStr = JSON.stringify(this.cards);
-                        const sizeInMB = (dataStr.length * 2) / (1024 * 1024);
-                        if (sizeInMB > 10) {
-                            console.warn('Tamanho dos dados excede 10MB:', sizeInMB);
-                            this.showToast('error', `Os dados são muito grandes (${sizeInMB.toFixed(2)} MB). Exporte os cartões, remova imagens ou cartões, e tente novamente.`);
+                        console.log(`Conteúdo do arquivo ${file.name}:`, reader.result);
+                        const parsedData = JSON.parse(reader.result);
+                        let importedCards = parsedData;
+    
+                        // Verificar se é um único cartão (modo separate) ou um array (modo complete)
+                        if (!Array.isArray(parsedData)) {
+                            if (parsedData.cards && Array.isArray(parsedData.cards)) {
+                                importedCards = parsedData.cards;
+                            } else {
+                                // Tratar como um único cartão
+                                importedCards = [parsedData];
+                            }
+                        }
+    
+                        if (!Array.isArray(importedCards)) {
+                            throw new Error('Formato inválido: o arquivo deve conter um cartão ou um array de cartões.');
+                        }
+    
+                        importedCards.forEach(card => {
+                            if (!card.id || !card.name || !card.tag) {
+                                console.log(`Cartão inválido ignorado no arquivo ${file.name}:`, card);
+                                return;
+                            }
+    
+                            if (!card.code) {
+                                card.code = this.generateCardCode(card.tag);
+                            }
+    
+                            card.created = card.created || new Date().toISOString();
+                            card.lastEdited = new Date().toISOString();
+    
+                            const existing = this.cards.find(c => c.id === card.id);
+                            if (existing) {
+                                card.id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+                                card.code = this.generateCardCode(card.tag);
+                            }
+    
+                            this.cards.push(card);
+                            validCardsCount++;
+                        });
+    
+                        resolve();
+                    } catch (err) {
+                        console.error(`Erro ao processar arquivo ${file.name}:`, err.message);
+                        reject(err);
+                    }
+                };
+                reader.onerror = () => reject(new Error(`Erro ao ler o arquivo ${file.name}`));
+                reader.readAsText(file);
+            });
+        };
+    
+        Promise.allSettled(Array.from(files).map(file => processFile(file)))
+            .then(results => {
+                filesProcessed = totalFiles;
+                const errors = results.filter(result => result.status === 'rejected').map(result => result.reason.message);
+    
+                if (validCardsCount > 0) {
+                    if (typeof localStorage !== 'undefined') {
+                        try {
+                            const dataStr = JSON.stringify(this.cards);
+                            const sizeInMB = (dataStr.length * 2) / (1024 * 1024);
+                            if (sizeInMB > 10) {
+                                console.warn('Tamanho dos dados excede 10MB:', sizeInMB);
+                                this.showToast('error', `Os dados são muito grandes (${sizeInMB.toFixed(2)} MB). Exporte os cartões, remova imagens ou cartões, e tente novamente.`);
+                                return;
+                            }
+                            localStorage.setItem('cards', dataStr);
+                        } catch (err) {
+                            console.error('Erro ao salvar no localStorage:', err);
+                            this.showToast('error', 'Erro ao salvar no armazenamento local: ' + err.message);
                             return;
                         }
-                        localStorage.setItem('cards', dataStr);
-                    } catch (err) {
-                        console.error('Erro ao salvar no localStorage:', err);
-                        this.showToast('error', 'Erro ao salvar no armazenamento local: ' + err.message);
-                        return;
                     }
+                    this.renderCards();
+                    this.updateCardCounts();
+                    this.updateLastUpdated();
+                    this.showToast('success', `${validCardsCount} cartão(ões) importado(s) com sucesso!`);
+                } else {
+                    this.showToast('error', 'Nenhum cartão válido encontrado nos arquivos.');
                 }
-                this.renderCards();
-                this.updateCardCounts();
-                this.updateLastUpdated();
-                this.showToast('success', `${validCardsCount} cartão(ões) importado(s) com sucesso!`);
-            } catch (err) {
-                console.error('Erro de importação:', err.message);
-                this.showToast('error', `Erro ao importar cartões: ${err.message}`);
-            }
-        };
-        reader.readAsText(file);
+    
+                if (errors.length > 0) {
+                    errors.forEach(error => {
+                        this.showToast('error', `Erro ao importar um arquivo: ${error}`);
+                    });
+                }
+            })
+            .catch(err => {
+                console.error('Erro geral na importação:', err);
+                this.showToast('error', 'Erro inesperado ao importar arquivos.');
+            });
+    
         e.target.value = '';
     }
 }
