@@ -1,7 +1,7 @@
 # CatalogGnews
 
 
-ATUALIZAÇÔES
+  ATUALIZAÇÔES
 
 - BUGS CORRIGIDOS:
   
@@ -11,7 +11,7 @@ Problema de limatação de tamanho ao carregar uma imagem na ação de duplicar.
 
 Erro silencioso do onClick na ampliação da foto de preview no card.
 
-NEW FEATURES
+- NEW FEATURES
 
 -Função para Exportar Cartões completos e separado
 
