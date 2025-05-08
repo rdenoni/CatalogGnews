@@ -6,7 +6,6 @@ class CardCatalogData extends CardCatalogUI {
         this.lastDuplicateTime = 0;
         this.lastSaveTime = 0;
         this.initializeData();
-
     }
 
     initializeData() {
@@ -47,8 +46,6 @@ class CardCatalogData extends CardCatalogUI {
         this.updateLastUpdated();
     }
 
-
-// Carrega cards no inicio
     getStorageSize() {
         if (typeof localStorage === 'undefined') return '0 MB';
         const dataStr = localStorage.getItem('cards') || '';
@@ -81,7 +78,7 @@ class CardCatalogData extends CardCatalogUI {
             console.log('Botão Selecionar Imagem clicado', {
                 timestamp: new Date().toISOString(),
                 target: e.target.id,
-                isTrusted: e.isTrusted // Indicates if the event was triggered by a user
+                isTrusted: e.isTrusted
             });
             const imageInput = document.getElementById('card-image-input');
             imageInput.value = '';
@@ -103,9 +100,7 @@ class CardCatalogData extends CardCatalogUI {
             this.handleImageUpload(e);
         });
 
-
         document.getElementById('remove-image-btn').addEventListener('click', () => this.removeImage());
-
 
         document.getElementById('card-description').addEventListener('input', (e) => {
             const counter = document.getElementById('card-description-counter');
@@ -154,7 +149,9 @@ class CardCatalogData extends CardCatalogUI {
                 this.openDeleteModal(id);
             } else if (action === 'open-image' && image) {
                 e.stopPropagation();
-                console.log('Abrindo modal de imagem:', image);
+                console
+
+System: log('Abrindo modal de imagem:', image);
                 this.openImageModal(image);
             } else {
                 console.log('Nenhuma ação correspondente encontrada para o clique.');
@@ -290,7 +287,7 @@ class CardCatalogData extends CardCatalogUI {
                 return;
             }
         } else {
-            this.cards.push(card);
+            this.cards.push* 1;
             console.log('Novo cartão adicionado:', card);
         }
 
@@ -298,13 +295,9 @@ class CardCatalogData extends CardCatalogUI {
             try {
                 const dataStr = JSON.stringify(this.cards);
                 const sizeInMB = (dataStr.length * 2) / (1024 * 1024);
-                if (sizeInMB > 10) {
-                    console.warn('Tamanho dos dados excede 10MB:', sizeInMB);
-                    this.showToast('error', `Os dados são muito grandes (${sizeInMB.toFixed(2)} MB). Exporte os cartões, remova imagens ou cartões, e tente novamente.`);
-                    saveButton.disabled = false;
-                    return;
-                }
+                console.log(`Tamanho dos dados salvos: ${sizeInMB.toFixed(2)} MB`);
                 localStorage.setItem('cards', dataStr);
+                
                 console.log('Salvo no localStorage:', this.cards);
             } catch (err) {
                 console.error('Erro ao salvar no localStorage:', err);
@@ -357,12 +350,6 @@ class CardCatalogData extends CardCatalogUI {
         if (typeof localStorage !== 'undefined') {
             try {
                 const dataStr = JSON.stringify(this.cards);
-                const sizeInMB = (dataStr.length * 2) / (1024 * 1024);
-                if (sizeInMB > 10) {
-                    console.warn('Tamanho dos dados excede 10MB:', sizeInMB);
-                    this.showToast('error', `Os dados são muito grandes (${sizeInMB.toFixed(2)} MB). Exporte os cartões, remova imagens ou cartões, e tente novamente.`);
-                    return;
-                }
                 localStorage.setItem('cards', dataStr);
                 console.log('localStorage atualizado após exclusão:', this.cards);
             } catch (err) {
@@ -414,12 +401,6 @@ class CardCatalogData extends CardCatalogUI {
         if (typeof localStorage !== 'undefined') {
             try {
                 const dataStr = JSON.stringify(this.cards);
-                const sizeInMB = (dataStr.length * 2) / (1024 * 1024);
-                if (sizeInMB > 10) {
-                    console.warn('Tamanho dos dados excede 10MB:', sizeInMB);
-                    this.showToast('warning', `Cartão duplicado, mas os dados são muito grandes (${sizeInMB.toFixed(2)} MB). Exporte os cartões, remova imagens ou cartões, e tente salvar novamente.`);
-                    return;
-                }
                 localStorage.setItem('cards', dataStr);
                 console.log('localStorage atualizado após duplicação:', this.cards);
             } catch (err) {
@@ -428,7 +409,6 @@ class CardCatalogData extends CardCatalogUI {
             }
         }
     }
-
 
     removeImage() {
         document.getElementById('card-image-input').value = '';
@@ -450,7 +430,6 @@ class CardCatalogData extends CardCatalogUI {
         }
         try {
             if (mode === 'complete') {
-                // Exportar todos os cartões em um único arquivo JSON
                 const dataStr = JSON.stringify(this.cards, null, 2);
                 const blob = new Blob([dataStr], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
@@ -461,9 +440,7 @@ class CardCatalogData extends CardCatalogUI {
                 URL.revokeObjectURL(url);
                 this.showToast('success', 'Cartões exportados com sucesso!');
             } else if (mode === 'separate') {
-                // Exportar cada cartão em um arquivo JSON separado com uma única confirmação
                 if (!window.showDirectoryPicker) {
-                    // Fallback para navegadores sem suporte à API showDirectoryPicker
                     this.cards.forEach(card => {
                         const sanitizedName = card.name.replace(/[^a-zA-Z0-9\s-_]/g, '').replace(/\s+/g, '_');
                         const fileName = `${card.tag}_${card.id}_${sanitizedName}.json`;
@@ -478,7 +455,6 @@ class CardCatalogData extends CardCatalogUI {
                     });
                     this.showToast('warning', `${this.cards.length} cartão(ões) exportado(s) individualmente. Use um navegador moderno para salvar em uma única pasta.`);
                 } else {
-                    // Usar showDirectoryPicker para escolher um diretório
                     const dirHandle = await window.showDirectoryPicker();
                     for (const card of this.cards) {
                         const sanitizedName = card.name.replace(/[^a-zA-Z0-9\s-_]/g, '').replace(/\s+/g, '_');
@@ -500,7 +476,6 @@ class CardCatalogData extends CardCatalogUI {
             this.showToast('error', 'Erro ao exportar cartões: ' + err.message);
         }
     }
-
 
     handleImageUpload(e) {
         const file = e.target.files[0];
@@ -526,15 +501,14 @@ class CardCatalogData extends CardCatalogUI {
         }
     }
 
-
     importCards(e) {
         const files = e.target.files;
         if (!files || files.length === 0) return;
-    
+
         let validCardsCount = 0;
         let filesProcessed = 0;
         const totalFiles = files.length;
-    
+
         const processFile = (file) => {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -543,44 +517,42 @@ class CardCatalogData extends CardCatalogUI {
                         console.log(`Conteúdo do arquivo ${file.name}:`, reader.result);
                         const parsedData = JSON.parse(reader.result);
                         let importedCards = parsedData;
-    
-                        // Verificar se é um único cartão (modo separate) ou um array (modo complete)
+
                         if (!Array.isArray(parsedData)) {
                             if (parsedData.cards && Array.isArray(parsedData.cards)) {
                                 importedCards = parsedData.cards;
                             } else {
-                                // Tratar como um único cartão
                                 importedCards = [parsedData];
                             }
                         }
-    
+
                         if (!Array.isArray(importedCards)) {
                             throw new Error('Formato inválido: o arquivo deve conter um cartão ou um array de cartões.');
                         }
-    
+
                         importedCards.forEach(card => {
                             if (!card.id || !card.name || !card.tag) {
                                 console.log(`Cartão inválido ignorado no arquivo ${file.name}:`, card);
                                 return;
                             }
-    
+
                             if (!card.code) {
                                 card.code = this.generateCardCode(card.tag);
                             }
-    
+
                             card.created = card.created || new Date().toISOString();
                             card.lastEdited = new Date().toISOString();
-    
+
                             const existing = this.cards.find(c => c.id === card.id);
                             if (existing) {
                                 card.id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
                                 card.code = this.generateCardCode(card.tag);
                             }
-    
+
                             this.cards.push(card);
                             validCardsCount++;
                         });
-    
+
                         resolve();
                     } catch (err) {
                         console.error(`Erro ao processar arquivo ${file.name}:`, err.message);
@@ -591,22 +563,16 @@ class CardCatalogData extends CardCatalogUI {
                 reader.readAsText(file);
             });
         };
-    
+
         Promise.allSettled(Array.from(files).map(file => processFile(file)))
             .then(results => {
                 filesProcessed = totalFiles;
                 const errors = results.filter(result => result.status === 'rejected').map(result => result.reason.message);
-    
+
                 if (validCardsCount > 0) {
                     if (typeof localStorage !== 'undefined') {
                         try {
                             const dataStr = JSON.stringify(this.cards);
-                            const sizeInMB = (dataStr.length * 2) / (1024 * 1024);
-                            if (sizeInMB > 10) {
-                                console.warn('Tamanho dos dados excede 10MB:', sizeInMB);
-                                this.showToast('error', `Os dados são muito grandes (${sizeInMB.toFixed(2)} MB). Exporte os cartões, remova imagens ou cartões, e tente novamente.`);
-                                return;
-                            }
                             localStorage.setItem('cards', dataStr);
                         } catch (err) {
                             console.error('Erro ao salvar no localStorage:', err);
@@ -621,7 +587,7 @@ class CardCatalogData extends CardCatalogUI {
                 } else {
                     this.showToast('error', 'Nenhum cartão válido encontrado nos arquivos.');
                 }
-    
+
                 if (errors.length > 0) {
                     errors.forEach(error => {
                         this.showToast('error', `Erro ao importar um arquivo: ${error}`);
@@ -632,7 +598,7 @@ class CardCatalogData extends CardCatalogUI {
                 console.error('Erro geral na importação:', err);
                 this.showToast('error', 'Erro inesperado ao importar arquivos.');
             });
-    
+
         e.target.value = '';
     }
 }
