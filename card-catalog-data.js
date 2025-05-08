@@ -5,52 +5,102 @@ class CardCatalogData extends CardCatalogUI {
         this.isEventListenersInitialized = false;
         this.lastDuplicateTime = 0;
         this.lastSaveTime = 0;
+        this.db = null;
         this.initializeData();
     }
 
-    initializeData() {
+    async initializeData() {
         console.log('Iniciando carregamento de dados...');
-        if (typeof localStorage !== 'undefined') {
-            try {
-                const storedCards = localStorage.getItem('cards');
-                console.log('Dados brutos do localStorage:', storedCards);
-                if (storedCards) {
-                    const parsedCards = JSON.parse(storedCards);
-                    console.log('Dados parseados:', parsedCards);
-                    if (Array.isArray(parsedCards)) {
-                        this.cards = parsedCards;
-                        console.log('Cartões carregados com sucesso:', this.cards);
-                        console.log('Tamanho do armazenamento:', this.getStorageSize());
-                    } else {
-                        console.warn('Formato de dados inválido no localStorage. Esperado um array.');
-                        this.showToast('error', 'Dados inválidos no armazenamento local. Iniciando com lista vazia.');
-                        this.cards = [];
-                    }
-                } else {
-                    console.log('Nenhum cartão encontrado no localStorage.');
-                    this.cards = [];
-                }
-            } catch (err) {
-                console.error('Erro ao carregar cartões do localStorage:', err);
-                this.showToast('error', 'Erro ao carregar cartões do armazenamento local. Iniciando com lista vazia.');
-                this.cards = [];
-            }
-        } else {
-            console.warn('localStorage não disponível.');
+        try {
+            this.db = await this.openDatabase();
+            await this.migrateFromLocalStorage();
+            this.cards = await this.loadCardsFromDB();
+            console.log('Estado final de this.cards:', this.cards);
+            this.renderCards();
+            this.updateCardCounts();
+            this.updateLastUpdated();
+        } catch (err) {
+            console.error('Erro ao inicializar dados:', err);
+            this.showToast('error', 'Erro ao carregar cartões do armazenamento. Iniciando com lista vazia.');
             this.cards = [];
+            this.renderCards();
+            this.updateCardCounts();
+            this.updateLastUpdated();
         }
-
-        console.log('Estado final de this.cards:', this.cards);
-        this.renderCards();
-        this.updateCardCounts();
-        this.updateLastUpdated();
     }
 
-    getStorageSize() {
-        if (typeof localStorage === 'undefined') return '0 MB';
-        const dataStr = localStorage.getItem('cards') || '';
-        const sizeInMB = (dataStr.length * 2) / (1024 * 1024); // Aproximação em MB
-        return `${sizeInMB.toFixed(2)} MB`;
+    openDatabase() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open('cardCatalog', 1);
+
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                db.createObjectStore('cards', { keyPath: 'id' });
+                console.log('Object store "cards" criado no IndexedDB.');
+            };
+
+            request.onsuccess = (event) => {
+                console.log('Banco de dados IndexedDB aberto com sucesso.');
+                resolve(event.target.result);
+            };
+
+            request.onerror = (event) => {
+                console.error('Erro ao abrir IndexedDB:', event.target.error);
+                reject(new Error('Erro ao abrir o armazenamento: ' + event.target.error.message));
+            };
+        });
+    }
+
+    async migrateFromLocalStorage() {
+        if (typeof localStorage === 'undefined' || !localStorage.getItem('cards')) {
+            console.log('Nenhum dado no localStorage para migrar.');
+            return;
+        }
+
+        try {
+            const storedCards = localStorage.getItem('cards');
+            console.log('Dados brutos do localStorage:', storedCards);
+            const parsedCards = JSON.parse(storedCards);
+            if (!Array.isArray(parsedCards)) {
+                console.warn('Formato de dados inválido no localStorage. Ignorando migração.');
+                return;
+            }
+
+            const transaction = this.db.transaction(['cards'], 'readwrite');
+            const store = transaction.objectStore('cards');
+            for (const card of parsedCards) {
+                store.put(card);
+            }
+            await new Promise((resolve, reject) => {
+                transaction.oncomplete = () => {
+                    console.log('Dados migrados do localStorage para o IndexedDB.');
+                    localStorage.removeItem('cards');
+                    resolve();
+                };
+                transaction.onerror = () => reject(new Error('Erro ao migrar dados: ' + transaction.error.message));
+            });
+        } catch (err) {
+            console.error('Erro ao migrar dados do localStorage:', err);
+            this.showToast('error', 'Erro ao migrar dados do armazenamento local.');
+        }
+    }
+
+    loadCardsFromDB() {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['cards'], 'readonly');
+            const store = transaction.objectStore('cards');
+            const request = store.getAll();
+
+            request.onsuccess = () => {
+                console.log('Cartões carregados do IndexedDB:', request.result);
+                resolve(request.result);
+            };
+
+            request.onerror = () => {
+                console.error('Erro ao carregar cartões do IndexedDB:', request.error);
+                reject(new Error('Erro ao carregar cartões: ' + request.error.message));
+            };
+        });
     }
 
     initializeEventListeners() {
@@ -149,9 +199,7 @@ class CardCatalogData extends CardCatalogUI {
                 this.openDeleteModal(id);
             } else if (action === 'open-image' && image) {
                 e.stopPropagation();
-                console
-
-System: log('Abrindo modal de imagem:', image);
+                console.log('Abrindo modal de imagem:', image);
                 this.openImageModal(image);
             } else {
                 console.log('Nenhuma ação correspondente encontrada para o clique.');
@@ -217,7 +265,7 @@ System: log('Abrindo modal de imagem:', image);
         return fullCode;
     }
 
-    saveCard(e) {
+    async saveCard(e) {
         e.preventDefault();
         const saveButton = document.getElementById('save-card-btn');
         saveButton.disabled = true;
@@ -275,67 +323,76 @@ System: log('Abrindo modal de imagem:', image);
             image: imageInput.dataset.url || ''
         };
 
-        if (cardId) {
-            const index = this.cards.findIndex(c => c.id === cardId);
-            if (index !== -1) {
-                this.cards[index] = card;
-                console.log('Cartão atualizado no índice:', index, 'Novo código:', card.code);
-            } else {
-                console.warn('ID do cartão não encontrado para atualização:', cardId);
-                this.showToast('error', 'Erro ao atualizar cartão: ID não encontrado.');
-                saveButton.disabled = false;
-                return;
-            }
-        } else {
-            this.cards.push* 1;
-            console.log('Novo cartão adicionado:', card);
-        }
+        try {
+            const transaction = this.db.transaction(['cards'], 'readwrite');
+            const store = transaction.objectStore('cards');
 
-        if (typeof localStorage !== 'undefined') {
-            try {
-                const dataStr = JSON.stringify(this.cards);
-                const sizeInMB = (dataStr.length * 2) / (1024 * 1024);
-                console.log(`Tamanho dos dados salvos: ${sizeInMB.toFixed(2)} MB`);
-                localStorage.setItem('cards', dataStr);
-                
-                console.log('Salvo no localStorage:', this.cards);
-            } catch (err) {
-                console.error('Erro ao salvar no localStorage:', err);
-                this.showToast('error', 'Erro ao salvar no armazenamento local: ' + err.message);
-                saveButton.disabled = false;
-                return;
-            }
-        }
-
-        this.renderCards();
-        this.updateCardCounts();
-        this.updateLastUpdated();
-        this.closeModal('card');
-        this.showToast('success', cardId ? 'Cartão atualizado com sucesso!' : 'Cartão adicionado com sucesso!');
-        saveButton.disabled = false;
-    }
-
-    clearAllCards() {
-        if (confirm('Tem certeza que deseja limpar todos os cartões? Esta ação não pode ser desfeita.')) {
-            this.cards = [];
-            if (typeof localStorage !== 'undefined') {
-                try {
-                    localStorage.removeItem('cards');
-                    console.log('localStorage limpo.');
-                } catch (err) {
-                    console.error('Erro ao limpar localStorage:', err);
-                    this.showToast('error', 'Erro ao limpar o armazenamento local.');
+            if (cardId) {
+                const index = this.cards.findIndex(c => c.id === cardId);
+                if (index !== -1) {
+                    this.cards[index] = card;
+                    store.put(card);
+                    console.log('Cartão atualizado no índice:', index, 'Novo código:', card.code);
+                } else {
+                    console.warn('ID do cartão não encontrado para atualização:', cardId);
+                    this.showToast('error', 'Erro ao atualizar cartão: ID não encontrado.');
+                    saveButton.disabled = false;
                     return;
                 }
+            } else {
+                this.cards.push(card);
+                store.add(card);
+                console.log('Novo cartão adicionado:', card);
             }
+
+            await new Promise((resolve, reject) => {
+                transaction.oncomplete = () => resolve();
+                transaction.onerror = () => reject(new Error('Erro ao salvar cartão: ' + transaction.error.message));
+            });
+
+            this.renderCards();
+            this.updateCardCounts();
+            this.updateLastUpdated();
+            this.closeModal('card');
+            this.showToast('success', cardId ? 'Cartão atualizado com sucesso!' : 'Cartão adicionado com sucesso!');
+        } catch (err) {
+            console.error('Erro ao salvar no IndexedDB:', err);
+            this.showToast('error', 'Erro ao salvar no armazenamento: ' + err.message);
+        } finally {
+            saveButton.disabled = false;
+        }
+    }
+
+    async clearAllCards() {
+        if (!confirm('Tem certeza que deseja limpar todos os cartões? Esta ação não pode ser desfeita.')) {
+            return;
+        }
+
+        try {
+            const transaction = this.db.transaction(['cards'], 'readwrite');
+            const store = transaction.objectStore('cards');
+            store.clear();
+
+            await new Promise((resolve, reject) => {
+                transaction.oncomplete = () => {
+                    console.log('Todos os cartões limpos do IndexedDB.');
+                    resolve();
+                };
+                transaction.onerror = () => reject(new Error('Erro ao limpar cartões: ' + transaction.error.message));
+            });
+
+            this.cards = [];
             this.renderCards();
             this.updateCardCounts();
             this.updateLastUpdated();
             this.showToast('success', 'Todos os cartões foram limpos com sucesso!');
+        } catch (err) {
+            console.error('Erro ao limpar IndexedDB:', err);
+            this.showToast('error', 'Erro ao limpar o armazenamento: ' + err.message);
         }
     }
 
-    deleteCard(cardId) {
+    async deleteCard(cardId) {
         console.log('Excluindo cartão com ID:', cardId);
         const initialLength = this.cards.length;
         this.cards = this.cards.filter(c => c.id !== String(cardId));
@@ -347,25 +404,30 @@ System: log('Abrindo modal de imagem:', image);
             return;
         }
 
-        if (typeof localStorage !== 'undefined') {
-            try {
-                const dataStr = JSON.stringify(this.cards);
-                localStorage.setItem('cards', dataStr);
-                console.log('localStorage atualizado após exclusão:', this.cards);
-            } catch (err) {
-                console.error('Erro ao salvar no localStorage após exclusão:', err);
-                this.showToast('error', 'Erro ao salvar no armazenamento local: ' + err.message);
-                return;
-            }
-        }
+        try {
+            const transaction = this.db.transaction(['cards'], 'readwrite');
+            const store = transaction.objectStore('cards');
+            store.delete(String(cardId));
 
-        this.renderCards();
-        this.updateCardCounts();
-        this.updateLastUpdated();
-        this.showToast('success', 'Cartão excluído com sucesso!');
+            await new Promise((resolve, reject) => {
+                transaction.oncomplete = () => {
+                    console.log('Cartão excluído do IndexedDB:', cardId);
+                    resolve();
+                };
+                transaction.onerror = () => reject(new Error('Erro ao excluir cartão: ' + transaction.error.message));
+            });
+
+            this.renderCards();
+            this.updateCardCounts();
+            this.updateLastUpdated();
+            this.showToast('success', 'Cartão excluído com sucesso!');
+        } catch (err) {
+            console.error('Erro ao excluir do IndexedDB:', err);
+            this.showToast('error', 'Erro ao excluir do armazenamento: ' + err.message);
+        }
     }
 
-    duplicateCard(cardId) {
+    async duplicateCard(cardId) {
         const now = Date.now();
         if (now - this.lastDuplicateTime < 500) {
             console.log('Ação de duplicação ignorada devido a debounce.');
@@ -392,21 +454,27 @@ System: log('Abrindo modal de imagem:', image);
         this.cards.push(newCard);
         console.log('Cartão duplicado:', newCard);
 
-        this.renderCards();
-        this.updateCardCounts();
-        this.updateLastUpdated();
-        this.showToast('success', 'Cartão duplicado com sucesso!');
-        this.closeModal('details');
+        try {
+            const transaction = this.db.transaction(['cards'], 'readwrite');
+            const store = transaction.objectStore('cards');
+            store.add(newCard);
 
-        if (typeof localStorage !== 'undefined') {
-            try {
-                const dataStr = JSON.stringify(this.cards);
-                localStorage.setItem('cards', dataStr);
-                console.log('localStorage atualizado após duplicação:', this.cards);
-            } catch (err) {
-                console.error('Erro ao salvar no localStorage após duplicação:', err);
-                this.showToast('error', 'Erro ao salvar no armazenamento local: ' + err.message);
-            }
+            await new Promise((resolve, reject) => {
+                transaction.oncomplete = () => {
+                    console.log('Cartão salvo no IndexedDB:', newCard);
+                    resolve();
+                };
+                transaction.onerror = () => reject(new Error('Erro ao salvar cartão duplicado: ' + transaction.error.message));
+            });
+
+            this.renderCards();
+            this.updateCardCounts();
+            this.updateLastUpdated();
+            this.showToast('success', 'Cartão duplicado com sucesso!');
+            this.closeModal('details');
+        } catch (err) {
+            console.error('Erro ao salvar no IndexedDB:', err);
+            this.showToast('error', 'Erro ao salvar no armazenamento: ' + err.message);
         }
     }
 
@@ -501,7 +569,7 @@ System: log('Abrindo modal de imagem:', image);
         }
     }
 
-    importCards(e) {
+    async importCards(e) {
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
@@ -553,7 +621,7 @@ System: log('Abrindo modal de imagem:', image);
                             validCardsCount++;
                         });
 
-                        resolve();
+                        resolve(importedCards);
                     } catch (err) {
                         console.error(`Erro ao processar arquivo ${file.name}:`, err.message);
                         reject(err);
@@ -564,40 +632,41 @@ System: log('Abrindo modal de imagem:', image);
             });
         };
 
-        Promise.allSettled(Array.from(files).map(file => processFile(file)))
-            .then(results => {
-                filesProcessed = totalFiles;
-                const errors = results.filter(result => result.status === 'rejected').map(result => result.reason.message);
+        try {
+            const results = await Promise.allSettled(Array.from(files).map(file => processFile(file)));
+            filesProcessed = totalFiles;
+            const errors = results.filter(result => result.status === 'rejected').map(result => result.reason.message);
 
-                if (validCardsCount > 0) {
-                    if (typeof localStorage !== 'undefined') {
-                        try {
-                            const dataStr = JSON.stringify(this.cards);
-                            localStorage.setItem('cards', dataStr);
-                        } catch (err) {
-                            console.error('Erro ao salvar no localStorage:', err);
-                            this.showToast('error', 'Erro ao salvar no armazenamento local: ' + err.message);
-                            return;
-                        }
-                    }
-                    this.renderCards();
-                    this.updateCardCounts();
-                    this.updateLastUpdated();
-                    this.showToast('success', `${validCardsCount} cartão(ões) importado(s) com sucesso!`);
-                } else {
-                    this.showToast('error', 'Nenhum cartão válido encontrado nos arquivos.');
-                }
+            if (validCardsCount > 0) {
+                const transaction = this.db.transaction(['cards'], 'readwrite');
+                const store = transaction.objectStore('cards');
+                this.cards.forEach(card => store.put(card));
 
-                if (errors.length > 0) {
-                    errors.forEach(error => {
-                        this.showToast('error', `Erro ao importar um arquivo: ${error}`);
-                    });
-                }
-            })
-            .catch(err => {
-                console.error('Erro geral na importação:', err);
-                this.showToast('error', 'Erro inesperado ao importar arquivos.');
-            });
+                await new Promise((resolve, reject) => {
+                    transaction.oncomplete = () => {
+                        console.log('Cartões importados salvos no IndexedDB.');
+                        resolve();
+                    };
+                    transaction.onerror = () => reject(new Error('Erro ao salvar cartões importados: ' + transaction.error.message));
+                });
+
+                this.renderCards();
+                this.updateCardCounts();
+                this.updateLastUpdated();
+                this.showToast('success', `${validCardsCount} cartão(ões) importado(s) com sucesso!`);
+            } else {
+                this.showToast('error', 'Nenhum cartão válido encontrado nos arquivos.');
+            }
+
+            if (errors.length > 0) {
+                errors.forEach(error => {
+                    this.showToast('error', `Erro ao importar um arquivo: ${error}`);
+                });
+            }
+        } catch (err) {
+            console.error('Erro geral na importação:', err);
+            this.showToast('error', 'Erro inesperado ao importar arquivos: ' + err.message);
+        }
 
         e.target.value = '';
     }
