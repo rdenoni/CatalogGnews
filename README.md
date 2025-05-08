@@ -10,7 +10,7 @@ Erro silencioso do onClick na ampliação da foto de preview no card.
 
 NEW FEATURES
 
--Função para Exportar Cartões completos e separado
+-Função para Exportar Cartões completos e separado /p
 -Remoção da necessidade de confirmação multiplas na exportação.
 -Seleção de multiplos json na mesma janela de navegação.
 -JSON Carregado automaticamente.
