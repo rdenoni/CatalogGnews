@@ -1,6 +1,7 @@
 class CardCatalog {
     constructor() {
-        this.cards = []; // Inicializa vazio; dados serão carregados do IndexedDB
+        // Check if localStorage is available before accessing it
+        this.cards = (typeof localStorage !== 'undefined' && localStorage.getItem('cards')) ? JSON.parse(localStorage.getItem('cards')) : [];
         this.initializeElements();
         this.initializeEventListeners();
         this.renderCards();
