@@ -1,219 +1,220 @@
+/* Configurações gerais de cores */
 :root {
-    --cor-principal: #F23333;
-    --cor-escura: #374151;
-    --cor-destaque: #FFC44D;
-    --fundo-claro: #F4F6F8;
-    --fundo-escuro: #1F2937;
-    --texto-claro: #374151;
-    --texto-escuro: #D1D5DB;
-    --erro-claro: #EF4444;
-    --erro-escuro: #FFC44D;
-    --success-claro: #10B981;
-    --success-escuro: #34D399;
+    --cor-principal: #F23333; /* Vermelho usado em botões e destaques */
+    --cor-escura: #374151; /* Cinza escuro para textos e fundos */
+    --cor-destaque: #FFC44D; /* Amarelo para modo escuro */
+    --fundo-claro: #F4F6F8; /* Fundo claro da página */
+    --fundo-escuro: #1F2937; /* Fundo escuro no modo escuro */
+    --texto-claro: #374151; /* Cor do texto no modo claro */
+    --texto-escuro: #D1D5DB; /* Cor do texto no modo escuro */
+    --erro-claro: #EF4444; /* Vermelho para erros no modo claro */
+    --erro-escuro: #FFC44D; /* Amarelo para erros no modo escuro */
+    --success-claro: #10B981; /* Verde para duplicar no modo claro */
+    --success-escuro: #34D399; /* Verde claro para duplicar no modo escuro */
 }
 
+/* Estilo geral da página */
 body {
-    background: var(--fundo-claro);
-    font-family: 'Open Sans', sans-serif;
-    font-size: 16px;
-    transition: background 0.3s ease;
+    background: var(--fundo-claro); /* Fundo claro por padrão */
+    font-family: 'Open Sans', sans-serif; /* Fonte fácil de ler */
+    font-size: 16px; /* Tamanho do texto */
+    transition: background 0.3s ease; /* Transição suave ao mudar modo */
 }
 
 .dark body {
-    background: var(--fundo-escuro);
+    background: var(--fundo-escuro); /* Fundo escuro no modo escuro */
 }
 
+/* Estilo do cabeçalho */
 header {
-    background: var(--cor-principal);
-    padding: 1rem 2rem;
-    border-radius: 1rem;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    width: 95%;
-    max-width: 1300px;
-    margin: 0.5rem auto;
+    background: var(--cor-principal); /* Vermelho no modo claro */
+    padding: 1rem 2rem; /* Espaçamento interno */
+    border-radius: 1rem; /* Bordas arredondadas */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Sombra suave */
+    width: 95%; /* Largura ajustada */
+    max-width: 1300px; /* Largura máxima */
+    margin: 0.5rem auto; /* Centraliza */
 }
 
 .dark header {
-    background: var(--cor-destaque);
+    background: var(--cor-destaque); /* Amarelo no modo escuro */
 }
 
 header h1 {
-    font-family: 'Poppins', sans-serif;
-    font-size: 1.5rem;
-    font-weight: bold;
+    font-family: 'Poppins', sans-serif; /* Fonte moderna para títulos */
+    font-size: 1.5rem; /* Tamanho do título */
+    font-weight: bold; /* Negrito */
 }
 
 header #last-updated {
-    font-size: 0.8rem;
-    opacity: 0.9;
+    font-size: 0.8rem; /* Texto menor */
+    opacity: 0.9; /* Levemente transparente */
 }
 
+/* Estilo dos botões de modo escuro e ajuda */
 .dark-mode-toggle,
 .animate-help {
-    background: rgba(255, 255, 255, 0.1);
-    width: 2.5rem;
+    background: rgba(255, 255, 255, 0.1); /* Fundo semi-transparente */
+    width: 2.5rem; /* Tamanho do botão */
     height: 2.5rem;
-    border-radius: 50%;
+    border-radius: 50%; /* Formato circular */
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.3s ease, transform 0.2s ease;
+    transition: background 0.3s ease, transform 0.2s ease; /* Transição suave */
 }
 
 .dark-mode-toggle:hover,
 .animate-help:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.3); /* Mais claro ao passar o mouse */
+    transform: scale(1.1); /* Aumenta levemente */
 }
 
+/* Estilo dos campos de entrada (inputs, selects, textarea) */
 input, select, textarea {
-    border: 1px solid #E5E7EB;
-    background: #FFFFFF;
-    color: var(--texto-claro);
-    border-radius: 0.5rem;
-    padding: 0.75rem;
-    font-size: 0.9rem;
-    transition: border-color 0.3s ease;
+    border: 1px solid #E5E7EB; /* Borda clara */
+    background: #FFFFFF; /* Fundo branco */
+    color: var(--texto-claro); /* Texto escuro */
+    border-radius: 0.5rem; /* Bordas arredondadas */
+    padding: 0.75rem; /* Espaçamento interno */
+    font-size: 0.9rem; /* Tamanho do texto */
+    transition: border-color 0.3s ease; /* Transição suave */
 }
 
 .dark input,
 .dark select,
 .dark textarea {
-    border-color: #4B5563;
-    background: #2D3748;
-    color: #E5E7EB;
+    border-color: #4B5563; /* Borda escura no modo escuro */
+    background: #2D3748; /* Fundo escuro mais claro */
+    color: #E5E7EB; /* Texto claro */
 }
 
 input:focus,
 select:focus,
 textarea:focus {
-    outline: none;
-    border-color: var(--cor-principal);
-    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+    outline: none; /* Remove contorno padrão */
+    border-color: var(--cor-principal); /* Borda vermelha no modo claro */
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2); /* Sombra suave */
 }
 
 .dark input:focus,
 .dark select:focus,
 .dark textarea:focus {
-    border-color: var(--cor-destaque);
+    border-color: var(--cor-destaque); /* Borda amarela no modo escuro */
     box-shadow: 0 0 0 3px rgba(255, 196, 77, 0.2);
 }
 
+/* Estilo específico para o campo de pesquisa */
 #search-input {
-    background: #F9FAFB;
-    color: #1F2937;
+    background: #F9FAFB; /* Fundo claro */
+    color: #1F2937; /* Texto escuro */
 }
 
 #search-input::placeholder {
-    color: #6B7280;
+    color: #6B7280; /* Placeholder cinza */
 }
 
 .dark #search-input {
-    background: #374151;
-    color: #F9FAFB;
+    background: #374151; /* Fundo escuro */
+    color: #F9FAFB; /* Texto claro */
 }
 
 .dark #search-input::placeholder {
-    color: #9CA3AF;
+    color: #9CA3AF; /* Placeholder cinza claro */
 }
 
+/* Estilo específico para os filtros de categoria e ordenação */
 #tag-filter,
 #sort-order {
-    background: #F9FAFB;
-    color: #1F2937;
+    background: #F9FAFB; /* Fundo claro */
+    color: #1F2937; /* Texto escuro */
 }
 
 .dark #tag-filter,
 .dark #sort-order {
-    background: #374151;
-    color: #F9FAFB;
+    background: #374151; /* Fundo escuro */
+    color: #F9FAFB; /* Texto claro */
 }
 
+/* Estilo para campos com erro */
 input.error,
 textarea.error {
-    border-color: var(--erro-claro);
+    border-color: var(--erro-claro); /* Borda vermelha para erros */
     box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
 }
 
 .dark input.error,
 .dark textarea.error {
-    border-color: var(--erro-escuro);
-    box-shadow: 0 0 0 2px rgba(255, 196,藻77, 0.2);
+    border-color: var(--erro-escuro); /* Borda amarela no modo escuro */
+    box-shadow: 0 0 0 2px rgba(255, 196, 77, 0.2);
 }
 
+/* Estilo dos cartões */
 #cards-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
+    display: grid; /* Organiza em grade */
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Cartões ajustáveis */
+    gap: 1.5rem; /* Espaço entre cartões */
 }
 
 .card-preview {
-    background: #FFFFFF;
-    border-radius: 1rem;
-    padding: 1.5rem;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease;
+    background: #FFFFFF; /* Fundo branco */
+    border-radius: 1rem; /* Bordas arredondadas */
+    padding: 1.5rem; /* Espaçamento interno */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Sombra suave */
+    transition: transform 0.3s ease; /* Transição suave */
 }
 
 .dark .card-preview {
-    background: #374151;
+    background:#374151; /* Fundo mais claro no modo escuro */
 }
 
 .card-preview:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    transform: translateY(-5px); /* Levanta ao passar o mouse */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); /* Sombra maior */
 }
 
 .card-header {
-    display: flex;
+    display: flex; /* Alinha título e botões */
     justify-content: space-between;
     align-items: center;
     margin-bottom: 0.75rem;
 }
 
 .card-header h3 {
-    font-family: 'Poppins', sans-serif;
-    font-size: 1.2rem;
+    font-family: 'Poppins', sans-serif; /* Fonte moderna */
+    font-size: 1.2rem; /* Tamanho do título */
     font-weight: bold;
-    color: var(--texto-claro);
-    max-width: 60%;
-    text-transform: uppercase;
-}
-
-.card-header h3:hover {
-    color: #DC2626; /* red-600 */
+    color: var(--texto-claro); /* Texto escuro */
+    max-width: 60%; /* Limita largura para evitar sobreposição */
+    text-transform: uppercase; /* Título em caixa alta */
 }
 
 .dark .card-header h3 {
-    color: var(--texto-escuro);
-}
-
-.dark .card-header h3:hover {
-    color: #FBBF24; /* yellow-400 */
+    color: var(--texto-escuro); /* Texto claro no modo escuro */
 }
 
 .card-actions {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.5rem; /* Espaço entre botões */
 }
 
 .card-action-btn {
-    background: none;
-    color: var(--texto-claro);
-    border: none;
+    background: none; /* Sem fundo */
+    color: var(--texto-claro); /* Cor do ícone */
+    border: none; /* Sem borda */
     padding: 0.25rem;
-    width: 2rem;
+    width: 2rem; /* Tamanho do botão */
     height: 2rem;
-    border-radius: 50%;
+    border-radius: 50%; /* Circular */
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.3s ease, color 0.3s ease, transform 0.2s ease;
+    transition: background 0.3s ease, color 0.3s ease, transform 0.2s ease; /* Transição suave */
 }
 
 .card-action-btn:hover {
-    background: rgba(0, 0, 0, 0.1);
-    transform: scale(1.1);
+    background: rgba(0, 0, 0, 0.1); /* Fundo leve ao passar o mouse */
+    transform: scale(1.1); /* Aumenta levemente */
 }
 
 .dark .card-action-btn {
@@ -221,235 +222,238 @@ textarea.error {
 }
 
 .edit-btn:hover {
-    color: var(--cor-principal);
+    color: var(--cor-principal); /* Vermelho no modo claro */
 }
 
 .dark .edit-btn:hover {
-    color: var(--cor-destaque);
+    color: var(--cor-destaque); /* Amarelo no modo escuro */
 }
 
 .duplicate-btn:hover {
-    color: var(--success-claro);
+    color: var(--success-claro); /* Verde no modo claro */
 }
 
 .dark .duplicate-btn:hover {
-    color: var(--success-escuro);
+    color: var(--success-escuro); /* Verde claro no modo escuro */
 }
 
 .delete-btn:hover {
-    color: var(--erro-claro);
+    color: var(--erro-claro); /* Vermelho no modo claro */
 }
 
 .dark .delete-btn:hover {
-    color: var(--erro-escuro);
+    color: var(--erro-escuro); /* Amarelo no modo escuro */
 }
-
-.card-footer {
-    margin-top: .5rem; /* Adjusted to mt-6 (1.5rem) */
-}
-
 
 .card-footer .tag-code {
-    background: #E2E8F0;
-    color: var(--texto-claro);
-    font-size: 0.8rem;
-    padding: 0.3rem 0.6rem;
-    border-radius: 0.3rem;
+    background: #E2E8F0; /* Fundo claro */
+    color: var(--texto-claro); /* Texto escuro */
+    font-size: 0.8rem; /* Tamanho pequeno */
+    padding: 0.3rem 0.7rem; /* Espaçamento interno */
+    border-radius: 0.5rem; /* Bordas arredondadas */
 }
 
 .dark .card-footer .tag-code {
-    background: #4B5563;
-    color: var(--texto-escuro);
+    background: #4B5563; /* Fundo escuro */
+    color: var(--texto-escuro); /* Texto claro */
 }
 
 .copy-access-btn:hover {
-    transform: scale(1.1);
+    transform: scale(1.1); /* Aumenta ao passar o mouse */
 }
 
 .card-image img {
-    max-height: 20rem;
-    object-fit: cover;
-    border-radius: 0.5rem;
-    width: 100%;
-    cursor: pointer;
+    max-height: 10rem; /* Altura máxima */
+    object-fit: cover; /* Ajusta imagem */
+    border-radius: 0.5rem; /* Bordas arredondadas */
+    width: 100%; /* Largura total */
+    cursor: pointer; /* Mão ao passar o mouse */
 }
 
+/* Estilo dos botões flutuantes */
 .fab {
-    background: var(--cor-principal);
-    border-radius: 50%;
-    width: 3rem;
+    background: var(--cor-principal); /* Vermelho */
+    border-radius: 50%; /* Circular */
+    width: 3rem; /* Tamanho */
     height: 3rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Sombra */
+    transition: all 0.3s ease; /* Transição suave */
 }
 
 .dark .fab {
-    background: var(--cor-destaque);
+    background: var(--cor-destaque); /* Amarelo no modo escuro */
 }
 
 .fab:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1); /* Aumenta */
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3); /* Sombra maior */
 }
 
 .fab:active {
-    transform: scale(0.9);
+    transform: scale(0.9); /* Reduz ao clicar */
 }
 
+/* Estilo dos modais */
 .modal {
-    display: none;
-    position: fixed;
+    display: none; /* Escondido por padrão */
+    position: fixed; /* Fixo na tela */
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
+    background: rgba(0, 0, 0, 0.5); /* Fundo escuro semi-transparente */
+    z-index: 1000; /* Acima de outros elementos */
     align-items: center;
     justify-content: center;
 }
 
 .modal.show {
-    display: flex;
+    display: flex; /* Mostra quando ativo */
 }
 
 .modal-content {
-    max-height: 90vh;
-    overflow-y: auto;
-    transform: scale(0.8);
-    opacity: 0;
-    transition: transform 0.3s ease, opacity 0.3s ease;
+    max-height: 90vh; /* Altura máxima */
+    overflow-y: auto; /* Rolagem se necessário */
+    transform: scale(0.8); /* Começa pequeno */
+    opacity: 0; /* Invisível */
+    transition: transform 0.3s ease, opacity 0.3s ease; /* Animação suave */
 }
 
 .modal.show .modal-content {
-    transform: scale(1);
-    opacity: 1;
+    transform: scale(1); /* Tamanho normal */
+    opacity: 1; /* Visível */
 }
 
 .modal-close {
-    position: absolute;
+    position: absolute; /* Posição fixa */
     top: 0.5rem;
     right: 0.5rem;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease; /* Transição suave */
 }
 
 .modal-close:hover {
-    transform: scale(1.1);
+    transform: scale(1.1); /* Aumenta ao passar o mouse */
 }
 
+/* Estilo do modal de ajuda */
 #help-modal .modal-content {
-    max-width: 600px;
-    padding: 2rem;
-    border-radius: 1rem;
-    background: #FFFFFF;
+    max-width: 600px; /* Largura máxima */
+    padding: 2rem; /* Espaçamento interno */
+    border-radius: 1rem; /* Bordas arredondadas */
+    background: #FFFFFF; /* Fundo branco */
 }
 
 .dark #help-modal .modal-content {
-    background: var(--cor-escura);
+    background: var(--cor-escura); /* Fundo escuro */
 }
 
 #help-modal h2 {
-    font-family: 'Poppins', sans-serif;
-    font-size: 1.5rem;
-    color: var(--texto-claro);
+    font-family: 'Poppins', sans-serif; /* Fonte moderna */
+    font-size: 1.5rem; /* Tamanho do título */
+    color: var(--texto-claro); /* Texto escuro */
 }
 
 .dark #help-modal h2 {
-    color: var(--texto-escuro);
+    color: var(--texto-escuro); /* Texto claro */
 }
 
 #help-modal p,
 #help-modal ul li {
-    color: var(--texto-claro);
-    font-size: 0.9rem;
+    color: var(--texto-claro); /* Texto escuro */
+    font-size: 0.9rem; /* Tamanho do texto */
 }
 
 .dark #help-modal p,
 .dark #help-modal ul li {
-    color: var(--texto-escuro);
+    color: var(--texto-escuro); /* Texto claro */
 }
 
 #help-modal kbd {
-    background: #E5E7EB;
-    color: var(--texto-claro);
-    padding: 0.2rem 0.4rem;
-    border-radius: 0.2rem;
+    background: #E5E7EB; /* Fundo claro */
+    color: var(--texto-claro); /* Texto escuro */
+    padding: 0.2rem 0.4rem; /* Espaçamento */
+    border-radius: 0.2rem; /* Bordas arredondadas */
 }
 
 .dark #help-modal kbd {
-    background: #4B5563;
-    color: var(--texto-escuro);
+    background: #4B5563; /* Fundo escuro */
+    color: var(--texto-escuro); /* Texto claro */
 }
 
+/* Estilo do modal de imagem */
 #image-modal .modal-content {
-    background: #FFFFFF;
-    padding: 1rem;
-    border-radius: 0.5rem;
+    background: #FFFFFF; /* Fundo branco */
+    padding: 1rem; /* Espaçamento */
+    border-radius: 0.5rem; /* Bordas arredondadas */
 }
 
 .dark #image-modal .modal-content {
-    background: var(--cor-escura);
+    background: var(--cor-escura); /* Fundo escuro */
 }
 
 #image-modal img {
-    max-height: 80vh;
-    max-width: 90vw;
-    object-fit: contain;
-    border-radius: 0.5rem;
+    max-height: 80vh; /* Altura máxima */
+    max-width: 90vw; /* Largura máxima */
+    object-fit: contain; /* Ajusta imagem */
+    border-radius: 0.5rem; /* Bordas arredondadas */
 }
 
+/* Estilo do modal de detalhes */
 #details-modal .modal-content {
-    max-width: 800px;
-    padding: 2rem;
-    border-radius: 1rem;
-    background: #FFFFFF;
+    max-width: 800px; /* Largura máxima */
+    padding: 2rem; /* Espaçamento */
+    border-radius: 1rem; /* Bordas arredondadas */
+    background: #FFFFFF; /* Fundo branco */
 }
 
 .dark #details-modal .modal-content {
-    background: var(--cor-escura);
+    background: var(--cor-escura); /* Fundo escuro */
 }
 
 #details-image {
-    max-height: 24rem;
-    object-fit: cover;
-    border-radius: 0.5rem;
+    max-height: 24rem; /* Altura máxima */
+    object-fit: cover; /* Ajusta imagem */
+    border-radius: 0.5rem; /* Bordas arredondadas */
 }
 
 #details-description {
-    white-space: normal;
-    overflow-wrap: break-word;
+    white-space: normal; /* Permite quebra de linha */
+    overflow-wrap: break-word; /* Quebra palavras longas */
 }
 
+/* Estilo do modal de adicionar/editar cartão */
 #card-modal .modal-content {
-    max-width: 600px;
-    padding: 1.5rem;
-    border-radius: 1rem;
+    max-width: 600px; /* Largura máxima */
+    padding: 1.5rem; /* Espaçamento */
+    border-radius: 1rem; /* Bordas arredondadas */
 }
 
 #card-modal .form-section {
-    background: #F9FAFB;
-    border-radius: 0.5rem;
-    padding: 1rem;
+    background: #F9FAFB; /* Fundo claro */
+    border-radius: 0.5rem; /* Bordas arredondadas */
+    padding: 1rem; /* Espaçamento interno */
 }
 
 .dark #card-modal .form-section {
-    background: var(--cor-escura);
+    background: var(--cor-escura); /* Fundo escuro */
 }
 
+/* Estilo do contador de caracteres */
 #card-description-counter {
-    font-size: 0.75rem;
-    color: #6B7280;
+    font-size: 0.75rem; /* Tamanho pequeno */
+    color: #6B7280; /* Cinza claro */
 }
 
 .dark #card-description-counter {
-    color: #9CA3AF;
+    color: #9CA3AF; /* Cinza claro no modo escuro */
 }
 
+/* Estilo das notificações */
 .toast {
-    position: fixed;
+    position: fixed; /* Fixo na tela */
     bottom: 1rem;
     right: 1rem;
     display: flex;
@@ -458,97 +462,104 @@ textarea.error {
     padding: 0.75rem 1.5rem;
     border-radius: 0.5rem;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.3s ease, transform 0.3s ease;
-    z-index: 1000;
+    opacity: 0; /* Invisível por padrão */
+    transform: translateY(20px); /* Deslocado para baixo */
+    transition: opacity 0.3s ease, transform 0.3s ease; /* Animação suave */
+    z-index: 1000; /* Acima de outros elementos */
 }
 
 .toast.show {
-    opacity: 1;
-    transform: translateY(0);
+    opacity: 1; /* Visível */
+    transform: translateY(0); /* Na posição normal */
 }
 
 .toast.success {
-    background: #10B981;
-    color: #FFFFFF;
+    background: #10B981; /* Verde para sucesso */
+    color: #FFFFFF; /* Texto branco */
 }
 
 .toast.error {
-    background: #EF4444;
-    color: #FFFFFF;
+    background: #EF4444; /* Vermelho para erro */
+    color: #FFFFFF; /* Texto branco */
 }
 
+/* Estilo para o caminho de acesso */
 .access-path a {
-    word-break: break-all;
-    white-space: normal;
+    word-break: break-all; /* Quebra URLs longas */
+    white-space: normal; /* Permite quebra de linha */
 }
 
+/* Estilo para o contêiner da descrição no modal de detalhes */
 .description-container {
-    max-height: 150px;
-    overflow-y: auto;
-    word-break: break-word;
-    white-space: pre-wrap;
-    font-size: 0.95rem;
-    line-height: 1.5;
-    transition: background 0.3s ease;
+    max-height: 150px; /* Altura máxima para evitar rolagem excessiva */
+    overflow-y: auto; /* Rolagem interna apenas se necessário */
+    word-break: break-word; /* Quebra palavras longas */
+    white-space: pre-wrap; /* Respeita quebras de linha e wraps */
+    font-size: 0.95rem; /* Tamanho de fonte legível */
+    line-height: 1.5; /* Espaçamento entre linhas */
+    transition: background 0.3s ease; /* Transição suave para modo escuro */
 }
 
+/* Estiliza a barra de rolagem para ser discreta */
 .description-container::-webkit-scrollbar {
-    width: 6px;
+    width: 6px; /* Largura fina */
 }
 
 .description-container::-webkit-scrollbar-track {
-    background: transparent;
+    background: transparent; /* Fundo transparente */
 }
 
 .description-container::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.2); /* Cor suave */
     border-radius: 3px;
 }
 
 .dark .description-container::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.3); /* Cor suave no modo escuro */
 }
 
+/* Garante que o texto não vaze do contêiner */
 #details-modal .description-container {
-    width: 100%;
-    box-sizing: border-box;
+    width: 100%; /* Ocupa toda a largura disponível */
+    box-sizing: border-box; /* Inclui padding e borda na largura */
 }
 
+/* Responsividade para telas menores */
 @media (max-width: 768px) {
     .description-container {
-        max-height: 120px;
-        font-size: 0.9rem;
+        max-height: 120px; /* Reduz altura em telas menores */
+        font-size: 0.9rem; /* Texto um pouco menor */
     }
 }
 
+
+/* Estilos para telas menores */
 @media (max-width: 640px) {
     header {
-        padding: 1rem;
-        width: 95%;
+        padding: 1rem; /* Menos espaço */
+        width: 95%; /* Quase toda a tela */
     }
     header h1 {
-        font-size: 1.2rem;
+        font-size: 1.2rem; /* Título menor */
     }
     .dark-mode-toggle,
     .animate-help {
-        width: 2rem;
+        width: 2rem; /* Botões menores */
         height: 2rem;
     }
     .fab {
-        width: 2.5rem;
+        width: 2.5rem; /* Botões flutuantes menores */
         height: 2.5rem;
     }
     #cards-container {
-        grid-template-columns: 1fr;
-        gap: 1rem;
+        grid-template-columns: 1fr; /* Uma coluna */
+        gap: 1rem; /* Menos espaço */
     }
     .card-header h3 {
-        max-width: 50%;
+        max-width: 50%; /* Menos espaço para o título */
     }
     .card-action-btn {
-        width: 1.8rem;
+        width: 1.8rem; /* Botões menores */
         height: 1.8rem;
     }
 }
