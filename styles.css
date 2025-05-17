@@ -39,7 +39,7 @@ header {
 
 header h1 {
     font-family: 'Poppins', sans-serif;
-    font-size: 1.5rem;
+    font-size: 1.8rem;
     font-weight: bold;
 }
 
@@ -384,7 +384,7 @@ textarea.error {
 
 #help-modal h2 {
     font-family: 'Poppins', sans-serif;
-    font-size: 1.5rem;
+    font-size: 1.8rem;
     color: var(--texto-claro);
 }
 
@@ -456,7 +456,7 @@ textarea.error {
 
 #card-modal .modal-content {
     max-width: 600px;
-    padding: 1.5rem;
+    padding: 1.8rem;
     border-radius: 1rem;
 }
 
@@ -521,7 +521,7 @@ textarea.error {
     word-break: break-word;
     white-space: pre-wrap;
     font-size: 0.95rem;
-    line-height: 1.5;
+    line-height: 1.8;
     transition: background 0.3s ease;
 }
 
@@ -547,10 +547,61 @@ textarea.error {
     box-sizing: border-box;
 }
 
+#export-modal h2 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.8rem; /* Tamanho da fonte do título ajustado */
+    font-weight: bold;
+    color: var(--texto-claro);
+    margin-bottom: 1rem;
+}
+
+.dark #export-modal h2 {
+    color: var(--texto-escuro);
+}
+
+#export-complete-btn,
+#export-separate-btn {
+    width: 200px;
+    height: 40px;
+    padding: 5px 16px;
+    border-radius: 0.5rem;
+    background: var(--cor-principal);
+    color: #FFFFFF;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: background 0.3s ease;
+}
+
+#export-complete-btn:hover,
+#export-separate-btn:hover {
+    background: #DC2626;
+}
+
+.dark #export-complete-btn,
+.dark #export-separate-btn {
+    background: var(--cor-destaque);
+    color: #1F2937;
+}
+
+.dark #export-complete-btn:hover,
+.dark #export-separate-btn:hover {
+    background: #FBBF24;
+}
+
 @media (max-width: 768px) {
     .description-container {
         max-height: 120px;
         font-size: 0.9rem;
+    }
+    #export-complete-btn,
+    #export-separate-btn {
+        width: 100%;
+    }
+    #export-modal h2 {
+        font-size: 1.125rem; /* Tamanho da fonte reduzido em telas menores */
     }
 }
 
@@ -560,7 +611,7 @@ textarea.error {
         width: 95%;
     }
     header h1 {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
     }
     .dark-mode-toggle,
     .animate-help {
@@ -568,8 +619,8 @@ textarea.error {
         height: 2rem;
     }
     .fab {
-        width: 2.5rem;
-        height: 2.5rem;
+        width: 2.4rem;
+        height: 2.4rem;
     }
     #cards-container {
         grid-template-columns: 1fr;
@@ -579,7 +630,7 @@ textarea.error {
         max-width: 65%;
     }
     .card-action-btn {
-        width: 1.8rem;
-        height: 1.8rem;
+        width: 1.4rem;
+        height: 1.4rem;
     }
 }

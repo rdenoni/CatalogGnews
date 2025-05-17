@@ -60,7 +60,7 @@
         <header class="bg-red-500 dark:bg-yellow-400 text-white p-4 rounded-2xl mx-auto w-[95%] mt-2 sticky top-2 z-50">
             <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-6">
                 <div class="text-center sm:text-left">
-                    <h1 class="text-2xl font-bold dark:text-gray-900">GNEWS CATÁLOGO DE ARTE</h1>
+                    <h1 class="text-3xl font-bold dark:text-gray-900">GNEWS CATÁLOGO DE ARTE</h1>
                     <p id="last-updated" class="text-xs mt-1 dark:text-gray-900">Última atualização: Carregando...</p>
                 </div>
                 <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
@@ -101,6 +101,7 @@
             </div>
             <div id="cards-container" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
         </main>
+
 
         <!-- Botões flutuantes para ações -->
         <div class="fixed bottom-6 right-6 flex flex-col gap-2 z-40">
@@ -290,18 +291,15 @@
                 <button class="modal-close bg-gray-200 dark:bg-gray-700 hover:bg-red-600 dark:hover:bg-yellow-500 text-gray-800 dark:text-gray-200 rounded-full w-10 h-10 flex items-center justify-center" onclick="cardCatalog.closeModal('export')" title="Fechar">
                     <span class="material-icons">close</span>
                 </button>
-                <h2 id="export-modal-title" class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Exportar Cartões</h2>
+                <h2 id="export-modal-title" class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Exportar Cartões</h2>
                 <p class="text-gray-600 dark:text-gray-200 mb-6">Escolha como deseja exportar os cartões:</p>
-                <div class="flex flex-col gap-3">
+                <div class="flex flex-col gap-2">
                     <button class="bg-red-600 dark:bg-yellow-500 text-white dark:text-gray-900 px-4 py-2 rounded-lg hover:bg-red-700 dark:hover:bg-yellow-600 flex items-center gap-2" onclick="cardCatalog.exportCards('complete')" title="Exportar todos os cartões em um único arquivo JSON">
-                        <span class="material-icons">archive</span> Exportar Cards Completos
+                        <span class="material-icons">archive</span> Cards Completos
                     </button>
-                    <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2" onclick="cardCatalog.exportCards('separate')" title="Exportar cada cartão em um arquivo JSON separado">
-                        <span class="material-icons">file_copy</span> Exportar Cards Separados
+                    <button class="bg-red-600 dark:bg-yellow-500 text-white dark:text-gray-900 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center gap-2" onclick="cardCatalog.exportCards('separate')" title="Exportar cada cartão em um arquivo JSON separado">
+                        <span class="material-icons">file_copy</span> Cards Separados
                     </button>
-                </div>
-                <div class="flex justify-end mt-6">
-                    <button class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600" onclick="cardCatalog.closeModal('export')" title="Cancelar">Cancelar</button>
                 </div>
             </div>
         </div>
@@ -328,6 +326,25 @@
                 </div>
             </div>
         </div>
+
+<!-- Botões Exportar cartões separados e completos -->
+    
+<div id="export-modal" class="modal">
+        <div class="modal-content bg-white dark:bg-gray-800 rounded-lg p-36 max-w-md w-full">
+        <button class="modal-close material-icons" onclick="cardCatalog.closeModal('export')" title="Fechar" aria-label="Fechar">close</button>
+            <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Exportar Cartões</h2>
+            <p class="text-gray-600 dark:text-gray-300 mb-6">Escolha como deseja exportar os cartões:</p>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <button id="export-complete-btn" class="bg-red-600 dark:bg-yellow-500 text-white dark:text-gray-900 px-4 py-2 rounded-lg hover:bg-red-700 flex items-center gap-2" onclick="cardCatalog.exportCards('complete')" title="Exportar todos os cartões em um único arquivo JSON">
+                    <span class="material-icons">archive</span> Todos os Cards
+                </button>
+                <button id="export-separate-btn" class="bg-red-600 dark:bg-yellow-500 text-white dark:text-gray-900 px-4 py-2 rounded-lg hover:bg-red-700 flex items-center gap-2" onclick="cardCatalog.exportCards('separate')" title="Exportar cada cartão em um arquivo JSON separado">
+                    <span class="material-icons">file_copy</span> Cards Separados
+                </button>
+            </div>
+        </div>
+    </div>
+
 
         <!-- Notificação para mensagens -->
         <div id="toast" class="toast hidden" role="alert"></div>
