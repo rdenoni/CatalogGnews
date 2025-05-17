@@ -7,6 +7,7 @@
 - Filtro de (Z-A).
 - Limpa `Cache` no carregamento.
 - Hover com cor no nome dos cards
+- Ajuste de padding nos cards
 
 ---
 
