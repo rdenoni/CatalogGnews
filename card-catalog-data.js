@@ -31,12 +31,18 @@ class CardCatalogData extends CardCatalogUI {
 
     openDatabase() {
         return new Promise((resolve, reject) => {
-            const request = indexedDB.open('cardCatalog', 1);
+            const request = indexedDB.open('cardCatalog', 3); // Updated to version 3
 
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
-                db.createObjectStore('cards', { keyPath: 'id' });
-                console.log('Object store "cards" criado no IndexedDB.');
+                const oldVersion = event.oldVersion;
+                console.log(`Upgrading database from version ${oldVersion} to ${db.version}`);
+
+                if (oldVersion < 1) {
+                    db.createObjectStore('cards', { keyPath: 'id' });
+                    console.log('Object store "cards" created.');
+                }
+                // Add future upgrades here if needed
             };
 
             request.onsuccess = (event) => {
