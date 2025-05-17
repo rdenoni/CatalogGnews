@@ -5,108 +5,29 @@ class CardCatalogData extends CardCatalogUI {
         this.isEventListenersInitialized = false;
         this.lastDuplicateTime = 0;
         this.lastSaveTime = 0;
-        this.db = null;
         this.initializeData();
     }
 
     async initializeData() {
         console.log('Iniciando carregamento de dados...');
         try {
-            this.db = await this.openDatabase();
-            await this.migrateFromLocalStorage();
-            this.cards = await this.loadCardsFromDB();
+            const response = await fetch('https://raw.githubusercontent.com/rdenoni/CatalogGnews/refs/heads/main/database.json');
+            if (!response.ok) {
+                throw new Error(`Erro ao carregar database.json: ${response.statusText}`);
+            }
+            this.cards = await response.json();
             console.log('Estado final de this.cards:', this.cards);
             this.renderCards();
             this.updateCardCounts();
             this.updateLastUpdated();
         } catch (err) {
             console.error('Erro ao inicializar dados:', err);
-            this.showToast('error', 'Erro ao carregar cartões do armazenamento. Iniciando com lista vazia.');
+            this.showToast('error', 'Erro ao carregar cartões do arquivo. Iniciando com lista vazia.');
             this.cards = [];
             this.renderCards();
             this.updateCardCounts();
             this.updateLastUpdated();
         }
-    }
-
-    openDatabase() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open('cardCatalog', 3); // Updated to version 3
-
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
-                const oldVersion = event.oldVersion;
-                console.log(`Upgrading database from version ${oldVersion} to ${db.version}`);
-
-                if (oldVersion < 1) {
-                    db.createObjectStore('cards', { keyPath: 'id' });
-                    console.log('Object store "cards" created.');
-                }
-                // Add future upgrades here if needed
-            };
-
-            request.onsuccess = (event) => {
-                console.log('Banco de dados IndexedDB aberto com sucesso.');
-                resolve(event.target.result);
-            };
-
-            request.onerror = (event) => {
-                console.error('Erro ao abrir IndexedDB:', event.target.error);
-                reject(new Error('Erro ao abrir o armazenamento: ' + event.target.error.message));
-            };
-        });
-    }
-
-    async migrateFromLocalStorage() {
-        if (typeof localStorage === 'undefined' || !localStorage.getItem('cards')) {
-            console.log('Nenhum dado no localStorage para migrar.');
-            return;
-        }
-
-        try {
-            const storedCards = localStorage.getItem('cards');
-            console.log('Dados brutos do localStorage:', storedCards);
-            const parsedCards = JSON.parse(storedCards);
-            if (!Array.isArray(parsedCards)) {
-                console.warn('Formato de dados inválido no localStorage. Ignorando migração.');
-                return;
-            }
-
-            const transaction = this.db.transaction(['cards'], 'readwrite');
-            const store = transaction.objectStore('cards');
-            for (const card of parsedCards) {
-                store.put(card);
-            }
-            await new Promise((resolve, reject) => {
-                transaction.oncomplete = () => {
-                    console.log('Dados migrados do localStorage para o IndexedDB.');
-                    localStorage.removeItem('cards');
-                    resolve();
-                };
-                transaction.onerror = () => reject(new Error('Erro ao migrar dados: ' + transaction.error.message));
-            });
-        } catch (err) {
-            console.error('Erro ao migrar dados do localStorage:', err);
-            this.showToast('error', 'Erro ao migrar dados do armazenamento local.');
-        }
-    }
-
-    loadCardsFromDB() {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['cards'], 'readonly');
-            const store = transaction.objectStore('cards');
-            const request = store.getAll();
-
-            request.onsuccess = () => {
-                console.log('Cartões carregados do IndexedDB:', request.result);
-                resolve(request.result);
-            };
-
-            request.onerror = () => {
-                console.error('Erro ao carregar cartões do IndexedDB:', request.error);
-                reject(new Error('Erro ao carregar cartões: ' + request.error.message));
-            };
-        });
     }
 
     initializeEventListeners() {
@@ -254,21 +175,32 @@ class CardCatalogData extends CardCatalogUI {
     }
 
     generateCardCode(tag) {
-        const now = new Date();
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        let code = `${hours}${minutes}`;
-        let fullCode = `${tag}${code}`;
+        const existingCodes = this.cards
+            .filter(card => card.tag === tag && card.code.startsWith(tag))
+            .map(card => card.code)
+            .sort();
+
+        if (!existingCodes.length) {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            return `${tag}${hours}${minutes}`;
+        }
+
+        const latestCode = existingCodes[existingCodes.length - 1];
+        const numericPart = parseInt(latestCode.replace(tag, ''), 10);
+        const newNumericPart = numericPart + 1;
+        const newCode = `${tag}${String(newNumericPart).padStart(4, '0')}`;
 
         let counter = 0;
-        while (this.cards.some(card => card.code === fullCode)) {
-            code = `${hours}${minutes}${Math.floor(Math.random() * 10)}`;
-            fullCode = `${tag}${code}`;
+        let finalCode = newCode;
+        while (this.cards.some(card => card.code === finalCode)) {
+            finalCode = `${tag}${String(newNumericPart + counter).padStart(4, '0')}`;
             counter++;
             if (counter > 10) break;
         }
 
-        return fullCode;
+        return finalCode;
     }
 
     async saveCard(e) {
@@ -330,14 +262,10 @@ class CardCatalogData extends CardCatalogUI {
         };
 
         try {
-            const transaction = this.db.transaction(['cards'], 'readwrite');
-            const store = transaction.objectStore('cards');
-
             if (cardId) {
                 const index = this.cards.findIndex(c => c.id === cardId);
                 if (index !== -1) {
                     this.cards[index] = card;
-                    store.put(card);
                     console.log('Cartão atualizado no índice:', index, 'Novo código:', card.code);
                 } else {
                     console.warn('ID do cartão não encontrado para atualização:', cardId);
@@ -347,14 +275,8 @@ class CardCatalogData extends CardCatalogUI {
                 }
             } else {
                 this.cards.push(card);
-                store.add(card);
                 console.log('Novo cartão adicionado:', card);
             }
-
-            await new Promise((resolve, reject) => {
-                transaction.oncomplete = () => resolve();
-                transaction.onerror = () => reject(new Error('Erro ao salvar cartão: ' + transaction.error.message));
-            });
 
             this.renderCards();
             this.updateCardCounts();
@@ -362,8 +284,8 @@ class CardCatalogData extends CardCatalogUI {
             this.closeModal('card');
             this.showToast('success', cardId ? 'Cartão atualizado com sucesso!' : 'Cartão adicionado com sucesso!');
         } catch (err) {
-            console.error('Erro ao salvar no IndexedDB:', err);
-            this.showToast('error', 'Erro ao salvar no armazenamento: ' + err.message);
+            console.error('Erro ao salvar cartão:', err);
+            this.showToast('error', 'Erro ao salvar cartão: ' + err.message);
         } finally {
             saveButton.disabled = false;
         }
@@ -375,26 +297,14 @@ class CardCatalogData extends CardCatalogUI {
         }
 
         try {
-            const transaction = this.db.transaction(['cards'], 'readwrite');
-            const store = transaction.objectStore('cards');
-            store.clear();
-
-            await new Promise((resolve, reject) => {
-                transaction.oncomplete = () => {
-                    console.log('Todos os cartões limpos do IndexedDB.');
-                    resolve();
-                };
-                transaction.onerror = () => reject(new Error('Erro ao limpar cartões: ' + transaction.error.message));
-            });
-
             this.cards = [];
             this.renderCards();
             this.updateCardCounts();
             this.updateLastUpdated();
             this.showToast('success', 'Todos os cartões foram limpos com sucesso!');
         } catch (err) {
-            console.error('Erro ao limpar IndexedDB:', err);
-            this.showToast('error', 'Erro ao limpar o armazenamento: ' + err.message);
+            console.error('Erro ao limpar cartões:', err);
+            this.showToast('error', 'Erro ao limpar cartões: ' + err.message);
         }
     }
 
@@ -411,25 +321,13 @@ class CardCatalogData extends CardCatalogUI {
         }
 
         try {
-            const transaction = this.db.transaction(['cards'], 'readwrite');
-            const store = transaction.objectStore('cards');
-            store.delete(String(cardId));
-
-            await new Promise((resolve, reject) => {
-                transaction.oncomplete = () => {
-                    console.log('Cartão excluído do IndexedDB:', cardId);
-                    resolve();
-                };
-                transaction.onerror = () => reject(new Error('Erro ao excluir cartão: ' + transaction.error.message));
-            });
-
             this.renderCards();
             this.updateCardCounts();
             this.updateLastUpdated();
             this.showToast('success', 'Cartão excluído com sucesso!');
         } catch (err) {
-            console.error('Erro ao excluir do IndexedDB:', err);
-            this.showToast('error', 'Erro ao excluir do armazenamento: ' + err.message);
+            console.error('Erro ao excluir cartão:', err);
+            this.showToast('error', 'Erro ao excluir cartão: ' + err.message);
         }
     }
 
@@ -461,26 +359,14 @@ class CardCatalogData extends CardCatalogUI {
         console.log('Cartão duplicado:', newCard);
 
         try {
-            const transaction = this.db.transaction(['cards'], 'readwrite');
-            const store = transaction.objectStore('cards');
-            store.add(newCard);
-
-            await new Promise((resolve, reject) => {
-                transaction.oncomplete = () => {
-                    console.log('Cartão salvo no IndexedDB:', newCard);
-                    resolve();
-                };
-                transaction.onerror = () => reject(new Error('Erro ao salvar cartão duplicado: ' + transaction.error.message));
-            });
-
             this.renderCards();
             this.updateCardCounts();
             this.updateLastUpdated();
             this.showToast('success', 'Cartão duplicado com sucesso!');
             this.closeModal('details');
         } catch (err) {
-            console.error('Erro ao salvar no IndexedDB:', err);
-            this.showToast('error', 'Erro ao salvar no armazenamento: ' + err.message);
+            console.error('Erro ao salvar cartão duplicado:', err);
+            this.showToast('error', 'Erro ao salvar cartão duplicado: ' + err.message);
         }
     }
 
@@ -644,18 +530,6 @@ class CardCatalogData extends CardCatalogUI {
             const errors = results.filter(result => result.status === 'rejected').map(result => result.reason.message);
 
             if (validCardsCount > 0) {
-                const transaction = this.db.transaction(['cards'], 'readwrite');
-                const store = transaction.objectStore('cards');
-                this.cards.forEach(card => store.put(card));
-
-                await new Promise((resolve, reject) => {
-                    transaction.oncomplete = () => {
-                        console.log('Cartões importados salvos no IndexedDB.');
-                        resolve();
-                    };
-                    transaction.onerror = () => reject(new Error('Erro ao salvar cartões importados: ' + transaction.error.message));
-                });
-
                 this.renderCards();
                 this.updateCardCounts();
                 this.updateLastUpdated();
@@ -678,5 +552,4 @@ class CardCatalogData extends CardCatalogUI {
     }
 }
 
-// Instantiate the final class
 const cardCatalog = new CardCatalogData();
