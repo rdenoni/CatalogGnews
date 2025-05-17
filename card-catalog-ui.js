@@ -60,6 +60,7 @@ class CardCatalogUI extends CardCatalog {
 
         filtered.sort((a, b) => {
             if (sort === 'name') return a.name.localeCompare(b.name);
+            if (sort === 'name-desc') return b.name.localeCompare(a.name);
             if (sort === 'lastEdited') return new Date(b.lastEdited) - new Date(a.lastEdited);
             if (sort === 'tag') return a.tag.localeCompare(b.tag);
             return 0;
