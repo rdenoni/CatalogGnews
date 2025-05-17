@@ -2,8 +2,10 @@
 
 ## 🚀 Atualizações Recentes
 
-- Carregamento automático de JSONs. (Atraves de um link direto do repositorio do Github)
-- Logica de criação de TAGs refeita ( Agora verifica se tem alguma TAG com o mesmo nome e soma +1)
+- Carregamento automático de JSONs. (Atraves de um link direto do repositorio do Github).
+- Logica de criação de TAGs refeita ( Agora verifica se tem alguma TAG com o mesmo nome e soma +1).
+- Filtro de (Z-A).
+- Limpa cash no carregamento.
 
 ---
 
