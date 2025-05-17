@@ -8,27 +8,36 @@ class CardCatalogData extends CardCatalogUI {
         this.initializeData();
     }
 
-    async initializeData() {
-        console.log('Iniciando carregamento de dados...');
-        try {
-            const response = await fetch('https://raw.githubusercontent.com/rdenoni/CatalogGnews/refs/heads/main/database.json');
-            if (!response.ok) {
-                throw new Error(`Erro ao carregar database.json: ${response.statusText}`);
-            }
-            this.cards = await response.json();
-            console.log('Estado final de this.cards:', this.cards);
-            this.renderCards();
-            this.updateCardCounts();
-            this.updateLastUpdated();
-        } catch (err) {
-            console.error('Erro ao inicializar dados:', err);
-            this.showToast('error', 'Erro ao carregar cartões do arquivo. Iniciando com lista vazia.');
-            this.cards = [];
-            this.renderCards();
-            this.updateCardCounts();
-            this.updateLastUpdated();
-        }
+
+clearLocalStorage() {
+    if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('cards');
+        console.log('LocalStorage limpo: cards removidos.');
     }
+}
+
+async initializeData() {
+    console.log('Iniciando carregamento de dados...');
+    this.clearLocalStorage(); // Clear localStorage before loading
+    try {
+        const response = await fetch('https://raw.githubusercontent.com/rdenoni/CatalogGnews/refs/heads/main/database.json');
+        if (!response.ok) {
+            throw new Error(`Erro ao carregar database.json: ${response.statusText}`);
+        }
+        this.cards = await response.json();
+        console.log('Estado final de this.cards:', this.cards);
+        this.renderCards();
+        this.updateCardCounts();
+        this.updateLastUpdated();
+    } catch (err) {
+        console.error('Erro ao inicializar dados:', err);
+        this.showToast('error', 'Erro ao carregar cartões do arquivo. Iniciando com lista vazia.');
+        this.cards = [];
+        this.renderCards();
+        this.updateCardCounts();
+        this.updateLastUpdated();
+    }
+}
 
     initializeEventListeners() {
         if (this.isEventListenersInitialized) {
