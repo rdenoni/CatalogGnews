@@ -1,10 +1,13 @@
 class CardCatalogUI extends CardCatalog {
     createCardElement(card) {
+        // Use raw name, let CSS handle wrapping
+        const displayName = this.escapeHTML(card.name);
+
         const div = document.createElement('div');
         div.className = 'card-preview rounded-2xl shadow-lg p-4 sm:p-6 relative bg-white dark:bg-gray-700 transition-all';
         div.innerHTML = `
             <div class="card-header flex justify-between items-start gap-2">
-                <h3 class="cursor-pointer truncate flex-1" data-action="open-details" data-id="${card.id}">${this.escapeHTML(card.name)}</h3>
+                <h3 class="cursor-pointer flex-1" data-action="open-details" data-id="${card.id}">${displayName}</h3>
                 <div class="card-actions flex gap-1">
                     <button class="card-action-btn edit-btn" data-action="edit-card" data-id="${card.id}" title="Editar cartão" aria-label="Editar cartão">
                         <span class="material-icons text-lg">edit</span>
@@ -22,7 +25,7 @@ class CardCatalogUI extends CardCatalog {
                 <img src="${card.image}" alt="Imagem do cartão ${this.escapeHTML(card.name)}" data-action="open-image" data-image="${card.image}">
             </div>
             ` : ''}
-            <div class="card-footer mt-2">
+            <div class="card-footer mt-6">
                 <span class="tag-code">${this.escapeHTML(card.code || 'Sem Código')}</span>
                 ${card.access ? `
                 <div class="access-path mt-2">
@@ -60,6 +63,7 @@ class CardCatalogUI extends CardCatalog {
 
         filtered.sort((a, b) => {
             if (sort === 'name') return a.name.localeCompare(b.name);
+            if (sort === 'name-desc') return b.name.localeCompare(a.name);
             if (sort === 'lastEdited') return new Date(b.lastEdited) - new Date(a.lastEdited);
             if (sort === 'tag') return a.tag.localeCompare(b.tag);
             return 0;
@@ -153,7 +157,12 @@ class CardCatalogUI extends CardCatalog {
                 const accessInput = document.getElementById('card-access');
                 const descriptionInput = document.getElementById('card-description');
 
-                if (nameInput) nameInput.value = card.name || '';
+                // Strip any HTML tags from name
+                if (nameInput) {
+                    const div = document.createElement('div');
+                    div.innerHTML = card.name;
+                    nameInput.value = div.textContent || '';
+                }
                 if (tagInput) tagInput.value = card.tag || 'MKT';
                 if (youtubeInput) youtubeInput.value = card.youtube || '';
                 if (accessInput) accessInput.value = card.access || '';
@@ -216,9 +225,6 @@ class CardCatalogUI extends CardCatalog {
         const detailsImage = document.getElementById('details-image');
         detailsImage.src = card.image || 'https://via.placeholder.com/400x300';
         detailsImage.dataset.image = card.image || '';
-        document.querySelectorAll('[data-action="open-image"]').forEach(el => {
-            el.dataset.image = card.image || '';
-        });
 
         const modalActions = document.querySelector('#details-modal .modal-actions');
         modalActions.innerHTML = ''; // No buttons in details modal
