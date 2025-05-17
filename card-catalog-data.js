@@ -8,8 +8,16 @@ class CardCatalogData extends CardCatalogUI {
         this.initializeData();
     }
 
+    clearLocalStorage() {
+        if (typeof localStorage !== 'undefined') {
+            localStorage.removeItem('cards');
+            console.log('LocalStorage limpo: cards removidos.');
+        }
+    }
+
     async initializeData() {
         console.log('Iniciando carregamento de dados...');
+        this.clearLocalStorage();
         try {
             const response = await fetch('https://raw.githubusercontent.com/rdenoni/CatalogGnews/refs/heads/main/database.json');
             if (!response.ok) {
@@ -107,7 +115,7 @@ class CardCatalogData extends CardCatalogUI {
                 e.stopPropagation();
                 console.log('Abrindo modal de detalhes para ID:', id);
                 this.openDetailsModal(id);
-            } else if (action === 'edit-card' && id) {
+            } else if (action === 'edit-card-menu' && id) {
                 e.stopPropagation();
                 console.log('Abrindo modal de edição para cartão ID:', id);
                 this.openCardModal(id);
@@ -116,14 +124,18 @@ class CardCatalogData extends CardCatalogUI {
                 console.log('Copiando acesso:', access);
                 navigator.clipboard.writeText(access);
                 this.showToast('success', 'Caminho copiado!');
-            } else if (action === 'duplicate-card' && id) {
+            } else if (action === 'duplicate-card-menu' && id) {
                 e.stopPropagation();
                 console.log('Duplicando cartão ID:', id);
                 this.duplicateCard(id);
-            } else if (action === 'delete-card' && id) {
+            } else if (action === 'delete-card-menu' && id) {
                 e.stopPropagation();
                 console.log('Abrindo modal de exclusão para ID:', id);
                 this.openDeleteModal(id);
+            } else if (action === 'export-card-menu' && id) {
+                e.stopPropagation();
+                console.log('Exportando cartão ID:', id);
+                this.exportSingleCard(id);
             } else if (action === 'open-image' && image) {
                 e.stopPropagation();
                 console.log('Abrindo modal de imagem:', image);
@@ -171,6 +183,25 @@ class CardCatalogData extends CardCatalogUI {
                 const modalType = e.target.id.split('-')[0];
                 this.closeModal(modalType);
             }
+            if (!e.target.closest('.card-actions')) {
+                document.querySelectorAll('.action-menu').forEach(menu => {
+                    menu.classList.add('hidden');
+                });
+            }
+        });
+
+        this.cardsContainer.addEventListener('click', (e) => {
+            const menuBtn = e.target.closest('.menu-btn');
+            if (menuBtn) {
+                e.stopPropagation();
+                const menu = menuBtn.nextElementSibling;
+                if (menu && menu.classList.contains('action-menu')) {
+                    document.querySelectorAll('.action-menu').forEach(otherMenu => {
+                        if (otherMenu !== menu) otherMenu.classList.add('hidden');
+                    });
+                    menu.classList.toggle('hidden');
+                }
+            }
         });
     }
 
@@ -216,7 +247,11 @@ class CardCatalogData extends CardCatalogUI {
         }
         this.lastSaveTime = now;
 
-        const name = document.getElementById('card-name').value.trim().toUpperCase();
+        let name = document.getElementById('card-name').value.trim().toUpperCase();
+        const div = document.createElement('div');
+        div.innerHTML = name;
+        name = div.textContent || '';
+
         const tag = document.getElementById('card-tag').value || 'MKT';
         const youtube = document.getElementById('card-youtube').value.trim();
         const access = document.getElementById('card-access').value.trim();
@@ -370,6 +405,33 @@ class CardCatalogData extends CardCatalogUI {
         }
     }
 
+    async exportSingleCard(cardId) {
+        console.log('Exportando cartão único com ID:', cardId);
+        const card = this.cards.find(c => c.id === String(cardId));
+        if (!card) {
+            console.warn('Cartão não encontrado para exportação:', cardId);
+            this.showToast('error', 'Erro ao exportar cartão: ID não encontrado.');
+            return;
+        }
+
+        try {
+            const sanitizedName = card.name.replace(/[^a-zA-Z0-9\s-_]/g, '').replace(/\s+/g, '_');
+            const fileName = `${card.tag}_${card.id}_${sanitizedName}.json`;
+            const dataStr = JSON.stringify(card, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            URL.revokeObjectURL(url);
+            this.showToast('success', 'Cartão exportado com sucesso!');
+        } catch (err) {
+            console.error('Erro ao exportar cartão:', err);
+            this.showToast('error', 'Erro ao exportar cartão: ' + err.message);
+        }
+    }
+
     removeImage() {
         document.getElementById('card-image-input').value = '';
         document.getElementById('card-image-input').dataset.url = '';
@@ -446,7 +508,7 @@ class CardCatalogData extends CardCatalogUI {
             reader.onload = () => {
                 const dataUrl = reader.result;
                 document.getElementById('card-image-preview').src = dataUrl;
-                document.getElementById('card-image-preview').classList.remove('hidden');
+                document.getElementById('card-image-preview').classList.add('hidden');
                 document.getElementById('card-image-path').textContent = file.name;
                 e.target.dataset.url = dataUrl;
                 document.getElementById('remove-image-btn').classList.remove('hidden');
@@ -487,7 +549,7 @@ class CardCatalogData extends CardCatalogUI {
                         }
 
                         if (!Array.isArray(importedCards)) {
-                            throw new Error('Formato inválido: o arquivo deve conter um cartão ou um array de cartões.');
+                            throw new Error('Formato inválido: o arquivo deve conter Canadian cartão ou um array de cartões.');
                         }
 
                         importedCards.forEach(card => {
@@ -499,6 +561,10 @@ class CardCatalogData extends CardCatalogUI {
                             if (!card.code) {
                                 card.code = this.generateCardCode(card.tag);
                             }
+
+                            const div = document.createElement('div');
+                            div.innerHTML = card.name;
+                            card.name = div.textContent || '';
 
                             card.created = card.created || new Date().toISOString();
                             card.lastEdited = new Date().toISOString();

@@ -1,23 +1,29 @@
 class CardCatalogUI extends CardCatalog {
     createCardElement(card) {
-        // Use raw name, let CSS handle wrapping
         const displayName = this.escapeHTML(card.name);
-
         const div = document.createElement('div');
         div.className = 'card-preview rounded-2xl shadow-lg p-4 sm:p-6 relative bg-white dark:bg-gray-700 transition-all';
         div.innerHTML = `
             <div class="card-header flex justify-between items-start gap-2">
                 <h3 class="cursor-pointer flex-1" data-action="open-details" data-id="${card.id}">${displayName}</h3>
-                <div class="card-actions flex gap-1">
-                    <button class="card-action-btn edit-btn" data-action="edit-card" data-id="${card.id}" title="Editar cartão" aria-label="Editar cartão">
-                        <span class="material-icons text-lg">edit</span>
+                <div class="card-actions relative">
+                    <button class="card-action-btn menu-btn" title="Mais ações" aria-label="Mais ações">
+                        <span class="material-icons text-lg">more_vert</span>
                     </button>
-                    <button class="card-action-btn duplicate-btn" data-action="duplicate-card" data-id="${card.id}" title="Duplicar cartão" aria-label="Duplicar cartão">
-                        <span class="material-icons text-lg">content_copy</span>
-                    </button>
-                    <button class="card-action-btn delete-btn" data-action="delete-card" data-id="${card.id}" title="Excluir cartão" aria-label="Excluir cartão">
-                        <span class="material-icons text-lg">delete</span>
-                    </button>
+                    <ul class="action-menu hidden absolute right-0 top-full mt-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg z-10">
+                        <li class="action-menu-item" data-action="edit-card-menu" data-id="${card.id}">
+                            <span class="material-icons text-sm mr-2">edit</span> Editar
+                        </li>
+                        <li class="action-menu-item" data-action="duplicate-card-menu" data-id="${card.id}">
+                            <span class="material-icons text-sm mr-2">content_copy</span> Duplicar
+                        </li>
+                        <li class="action-menu-item" data-action="delete-card-menu" data-id="${card.id}">
+                            <span class="material-icons text-sm mr-2">delete</span> Deletar
+                        </li>
+                        <li class="action-menu-item" data-action="export-card-menu" data-id="${card.id}">
+                            <span class="material-icons text-sm mr-2">download</span> Exportar
+                        </li>
+                    </ul>
                 </div>
             </div>
             ${card.image ? `
@@ -89,18 +95,18 @@ class CardCatalogUI extends CardCatalog {
             timestamp: new Date().toISOString(),
             modalAlreadyOpen: this.cardModal.classList.contains('show')
         });
-    
+
         if (!this.cardModal) {
             console.error('cardModal não encontrado no DOM.');
             this.showToast('error', 'Erro interno: modal de cartão não encontrado.');
             return;
         }
-    
+
         if (this.cardModal.classList.contains('show')) {
             console.log('Modal já aberto, evitando reinicialização desnecessária');
             return;
         }
-    
+
         this.cardModal.classList.add('show');
         const cardForm = document.getElementById('card-form');
         if (!cardForm) {
@@ -109,25 +115,25 @@ class CardCatalogUI extends CardCatalog {
             return;
         }
         cardForm.reset();
-    
+
         const cardIdInput = document.getElementById('card-id');
         if (cardIdInput) {
             cardIdInput.value = cardId;
         } else {
             console.warn('card-id não encontrado no DOM.');
         }
-    
+
         const errorElements = ['card-name-error', 'card-youtube-error', 'card-access-error'];
         errorElements.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.classList.add('hidden');
         });
-    
+
         const descriptionCounter = document.getElementById('card-description-counter');
         if (descriptionCounter) {
             descriptionCounter.textContent = '0/200 caracteres';
         }
-    
+
         const imagePreview = document.getElementById('card-image-preview');
         const imagePath = document.getElementById('card-image-path');
         const imageInput = document.getElementById('card-image-input');
@@ -139,7 +145,7 @@ class CardCatalogUI extends CardCatalog {
             imageInput.value = '';
         }
         if (removeImageBtn) removeImageBtn.classList.add('hidden');
-    
+
         const modalTitle = document.getElementById('modal-title');
         if (modalTitle) {
             modalTitle.textContent = cardId ? 'Editar Cartão' : 'Adicionar Cartão';
@@ -157,7 +163,6 @@ class CardCatalogUI extends CardCatalog {
                 const accessInput = document.getElementById('card-access');
                 const descriptionInput = document.getElementById('card-description');
 
-                // Strip any HTML tags from name
                 if (nameInput) {
                     const div = document.createElement('div');
                     div.innerHTML = card.name;
@@ -188,13 +193,12 @@ class CardCatalogUI extends CardCatalog {
         }
     }
 
-    // Função para quebrar texto a cada 50 caracteres, respeitando palavras inteiras
     breakTextAtInterval(text, interval = 50) {
         if (!text) return text;
         const words = text.split(' ');
         let currentLine = '';
         const lines = [];
-        
+
         for (const word of words) {
             if ((currentLine + (currentLine ? ' ' : '') + word).length <= interval) {
                 currentLine += (currentLine ? ' ' : '') + word;
@@ -204,7 +208,7 @@ class CardCatalogUI extends CardCatalog {
             }
         }
         if (currentLine) lines.push(currentLine);
-        
+
         return lines.join('\n');
     }
 
@@ -214,7 +218,6 @@ class CardCatalogUI extends CardCatalog {
 
         document.getElementById('details-name').textContent = this.escapeHTML(card.name);
         document.getElementById('details-code').textContent = this.escapeHTML(card.code || 'Sem Código');
-        // Aplica quebra de linha a cada 40 caracteres na descrição
         const formattedDescription = this.breakTextAtInterval(card.description || 'Sem descrição');
         document.getElementById('details-description').textContent = this.escapeHTML(formattedDescription);
         const youtubeLink = document.getElementById('details-youtube');
@@ -227,7 +230,7 @@ class CardCatalogUI extends CardCatalog {
         detailsImage.dataset.image = card.image || '';
 
         const modalActions = document.querySelector('#details-modal .modal-actions');
-        modalActions.innerHTML = ''; // No buttons in details modal
+        modalActions.innerHTML = '';
 
         this.detailsModal.classList.add('show');
     }
@@ -272,5 +275,4 @@ class CardCatalogUI extends CardCatalog {
     }
 }
 
-// Export the class for use in other files
 window.CardCatalogUI = CardCatalogUI;
