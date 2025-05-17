@@ -11,7 +11,7 @@
 
 ### 🐞 Bugs Corrigidos
 
-- (NEW) Onclick falso da foto no modal de detalhes do card.
+- (NEW) `onClick` falso da foto no modal de detalhes do card.
 - Corrigida duplicação de cards durante a criação.
 - Corrigido o problema de limitação de tamanho ao carregar imagens na duplicação.
 - Corrigido erro silencioso no `onClick` da ampliação da foto de preview no card.
