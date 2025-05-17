@@ -6,9 +6,9 @@
 - Logica de criação de TAGs refeita ( Agora verifica se tem alguma TAG com o mesmo nome e soma +1).
 - Filtro de (Z-A).
 - Limpa `Cache` no carregamento.
-- Hover com cor no nome dos cards
-- Ajuste de padding nos cards
-
+- Hover com cor no nome dos cards.
+- Ajuste de padding nos cards.
+- Sistema de linha dupla para os titulos.
 ---
 
 ### 🐞 Bugs Corrigidos
