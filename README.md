@@ -9,6 +9,9 @@
 - Hover com cor no nome dos cards.
 - Ajuste de padding nos cards.
 - Sistema de linha dupla para os titulos.
+- Menu de ação Dropdown para Botões `Editar`/`Duplicar`/`Excluir`
+- Menu de `Exportar` para card individual diretamente no card.
+  
 ---
 
 ### 🐞 Bugs Corrigidos
