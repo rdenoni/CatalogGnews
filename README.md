@@ -1,26 +1,28 @@
-# CatalogGnews
+# 📚 CatalogGnews
 
+## 🚀 Atualizações Recentes
 
-  ATUALIZAÇÔES
+- Carregamento automático de JSONs. (Atraves de um link direto do repositorio do Github)
+- Logica de criação de TAGs refeita ( Agora verifica se tem alguma TAG com o mesmo nome e soma +1)
 
-- BUGS CORRIGIDOS:
-  
-Duplicação de card na criação.
+---
 
-Problema de limatação de tamanho ao carregar uma imagem na ação de duplicar.
+### 🐞 Bugs Corrigidos
 
-Erro silencioso do onClick na ampliação da foto de preview no card.
+- (NEW) Onclick falso da foto no modal de detalhes do card.
+- Corrigida duplicação de cards durante a criação.
+- Corrigido o problema de limitação de tamanho ao carregar imagens na duplicação.
+- Corrigido erro silencioso no `onClick` da ampliação da foto de preview no card.
 
-- NEW FEATURES
+---
 
--Função para Exportar Cartões completos e separado
+### ✨ Novas Funcionalidades
 
--Remoção da necessidade de confirmação multiplas na exportação.
+- Exportação de cartões completos ou separados.
+- Remoção da necessidade de múltiplas confirmações na exportação.
+- Suporte à seleção de múltiplos arquivos JSON na mesma janela.
+- Removido o limite de 5MB de armazenamento no `localStorage`.
+- Migração do sistema de `localStorage` para **IndexedDB** para maior capacidade e performance.
 
--Seleção de multiplos json na mesma janela de navegação.
+---
 
--JSON Carregado automaticamente.
-
--Removido o limite de 5mb de armazenamendo do navegador no localStorage.
-
--Migração do sistema LocalStorage para o IndexedDB.
