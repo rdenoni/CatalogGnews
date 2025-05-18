@@ -1,12 +1,12 @@
 class CardCatalogData extends CardCatalogUI {
-    constructor() {
-        super();
-        this.cards = [];
-        this.isEventListenersInitialized = false;
-        this.lastDuplicateTime = 0;
-        this.lastSaveTime = 0;
-        this.initializeData();
-    }
+constructor() {
+    super();
+    this.cards = [];
+    this.isEventListenersInitialized = false;
+    this.lastDuplicateTime = 0;
+    this.lastSaveTime = 0;
+    this.initializeData();
+}
 
     clearLocalStorage() {
         if (typeof localStorage !== 'undefined') {
@@ -15,203 +15,265 @@ class CardCatalogData extends CardCatalogUI {
         }
     }
 
-    async initializeData() {
-        console.log('Iniciando carregamento de dados...');
-        this.clearLocalStorage();
+async initializeData() {
+    console.log('Iniciando carregamento de dados...');
+    this.clearLocalStorage();
+    try {
+        const response = await fetch('https://raw.githubusercontent.com/rdenoni/CatalogGnews/refs/heads/main/database.json');
+        if (!response.ok) {
+            throw new Error(`Erro ao carregar database.json: ${response.statusText}`);
+        }
+        this.cards = await response.json();
+        console.log('Estado final de this.cards:', this.cards);
+        this.renderCards();
+        this.updateCardCounts();
+        this.updateLastUpdated();
+        this.observeCardFade();
+    } catch (err) {
+        console.error('Erro ao inicializar dados:', err);
+        this.showToast('error', 'Erro ao carregar cartões do arquivo. Iniciando com lista vazia.');
+        this.cards = [];
+        this.renderCards();
+        this.updateCardCounts();
+        this.updateLastUpdated();
+        this.observeCardFade();
+    }
+}
+
+observeCardFade() {
+    const header = document.querySelector('header');
+    if (!header) {
+        console.error('Header não encontrado.');
+        return;
+    }
+    const headerHeight = header.offsetHeight;
+
+    // Fator para aumentar o tamanho do fade (ex: 1.5 = 50% maior)
+    const fadeFactor = 4;
+
+    // Fator para aumentar a intensidade da transparência (ex: 1.5 = 50% mais transparente)
+    const opacityFactor = 4;
+
+    const observer = new IntersectionObserver(
+        (entries) => {
+            entries.forEach((entry) => {
+                const card = entry.target;
+                const cardRect = card.getBoundingClientRect();
+                const cardTop = cardRect.top;
+                const cardHeight = cardRect.height;
+
+                // Calcula a sobreposição do cartão com o header
+                let overlap = 0;
+                if (cardTop < headerHeight && cardTop + cardHeight > 0) {
+                    overlap = Math.max(0, Math.min(headerHeight, cardTop + cardHeight) - Math.max(0, cardTop));
+                }
+
+                // Calcula a porcentagem de fade baseada na sobreposição e aumenta pelo fator
+                let fadePercentage = 0;
+                if (overlap > 0) {
+                    fadePercentage = Math.min((overlap / cardHeight) * 100 * fadeFactor, 100);
+                }
+
+                // Calcula a opacidade baseada na porcentagem de fade e aumenta a intensidade
+                let opacity = 1 - (fadePercentage / 100) * opacityFactor;
+                opacity = Math.max(0, Math.min(opacity, 1));
+
+                card.style.setProperty('--fade-percentage', `${fadePercentage}%`);
+                card.style.setProperty('--fade-opacity', opacity);
+            });
+        },
+        {
+            root: null,
+            threshold: Array.from({ length: 11 }, (_, i) => i / 10),
+            rootMargin: `-${headerHeight}px 0px 0px 0px`
+        }
+    );
+
+    setTimeout(() => {
+        const cards = document.querySelectorAll('.card-preview');
+        if (cards.length === 0) {
+            return;
+        }
+        cards.forEach((card) => observer.observe(card));
+    }, 100);
+}
+
+
+
+closeActionMenu(menu) {
+    if (menu && menu.classList.contains('action-menu')) {
+        menu.classList.add('hidden');
+        console.log('Menu de ação fechado.');
+    }
+}
+
+initializeEventListeners() {
+    if (this.isEventListenersInitialized) {
+        console.log('Event listeners já inicializados. Ignorando.');
+        return;
+    }
+    this.isEventListenersInitialized = true;
+    this.cardForm.addEventListener('submit', (e) => this.saveCard(e));
+
+    this.searchInput.addEventListener('input', () => this.filterCards());
+    this.clearSearch.addEventListener('click', () => {
+        this.searchInput.value = '';
+        this.clearSearch.classList.add('hidden');
+        this.filterCards();
+    });
+
+    this.tagFilter.addEventListener('change', () => this.filterCards());
+    this.sortOrder.addEventListener('change', () => this.filterCards());
+
+    const selectImageBtn = document.getElementById('select-image-btn');
+    selectImageBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('Botão Selecionar Imagem clicado', {
+            timestamp: new Date().toISOString(),
+            target: e.target.id,
+            isTrusted: e.isTrusted
+        });
+        const imageInput = document.getElementById('card-image-input');
+        imageInput.value = '';
+        console.log('Chamando imageInput.click()');
         try {
-            const response = await fetch('https://raw.githubusercontent.com/rdenoni/CatalogGnews/refs/heads/main/database.json');
-            if (!response.ok) {
-                throw new Error(`Erro ao carregar database.json: ${response.statusText}`);
-            }
-            this.cards = await response.json();
-            console.log('Estado final de this.cards:', this.cards);
-            this.renderCards();
-            this.updateCardCounts();
-            this.updateLastUpdated();
+            imageInput.click();
         } catch (err) {
-            console.error('Erro ao inicializar dados:', err);
-            this.showToast('error', 'Erro ao carregar cartões do arquivo. Iniciando com lista vazia.');
-            this.cards = [];
-            this.renderCards();
-            this.updateCardCounts();
-            this.updateLastUpdated();
+            console.error('Erro ao chamar imageInput.click():', err.message);
         }
-    }
+        console.log('imageInput.click() executado');
+    });
 
-    closeActionMenu(menu) {
-        if (menu && menu.classList.contains('action-menu')) {
-            menu.classList.add('hidden');
-            console.log('Menu de ação fechado.');
-        }
-    }
-
-    initializeEventListeners() {
-        if (this.isEventListenersInitialized) {
-            console.log('Event listeners já inicializados. Ignorando.');
-            return;
-        }
-        this.isEventListenersInitialized = true;
-        this.cardForm.addEventListener('submit', (e) => this.saveCard(e));
-
-        this.searchInput.addEventListener('input', () => this.filterCards());
-        this.clearSearch.addEventListener('click', () => {
-            this.searchInput.value = '';
-            this.clearSearch.classList.add('hidden');
-            this.filterCards();
+    document.getElementById('card-image-input').addEventListener('change', (e) => {
+        console.log('Evento change disparado no input de imagem', {
+            timestamp: new Date().toISOString(),
+            files: e.target.files.length,
+            isTrusted: e.isTrusted
         });
+        this.handleImageUpload(e);
+    });
 
-        this.tagFilter.addEventListener('change', () => this.filterCards());
-        this.sortOrder.addEventListener('change', () => this.filterCards());
+    document.getElementById('remove-image-btn').addEventListener('click', () => this.removeImage());
 
-        const selectImageBtn = document.getElementById('select-image-btn');
-        selectImageBtn.addEventListener('click', (e) => {
-            e.preventDefault();
+    document.getElementById('card-description').addEventListener('input', (e) => {
+        const counter = document.getElementById('card-description-counter');
+        counter.textContent = `${e.target.value.length}/200 caracteres`;
+    });
+
+    this.importInput.addEventListener('change', (e) => this.importCards(e));
+
+    if (!this.cardsContainer) {
+        console.error('cardsContainer não encontrado no DOM.');
+        this.showToast('error', 'Erro interno: contêiner de cartões não encontrado.');
+        return;
+    }
+
+    this.cardsContainer.addEventListener('click', (e) => {
+        console.log('Clique em cardsContainer, elemento:', e.target);
+        const actionElement = e.target.closest('[data-action]');
+        const idElement = e.target.closest('[data-id]');
+        const action = actionElement?.dataset.action;
+        const id = idElement?.dataset.id;
+        const image = e.target.closest('[data-image]')?.dataset.image;
+        const access = e.target.closest('[data-access]')?.dataset.access;
+        const menu = e.target.closest('.action-menu-item')?.parentElement;
+
+        console.log('Ação detectada:', action, 'ID do cartão:', id);
+
+        if (action === 'open-details' && id) {
             e.stopPropagation();
-            console.log('Botão Selecionar Imagem clicado', {
-                timestamp: new Date().toISOString(),
-                target: e.target.id,
-                isTrusted: e.isTrusted
-            });
-            const imageInput = document.getElementById('card-image-input');
-            imageInput.value = '';
-            console.log('Chamando imageInput.click()');
-            try {
-                imageInput.click();
-            } catch (err) {
-                console.error('Erro ao chamar imageInput.click():', err.message);
-            }
-            console.log('imageInput.click() executado');
-        });
-
-        document.getElementById('card-image-input').addEventListener('change', (e) => {
-            console.log('Evento change disparado no input de imagem', {
-                timestamp: new Date().toISOString(),
-                files: e.target.files.length,
-                isTrusted: e.isTrusted
-            });
-            this.handleImageUpload(e);
-        });
-
-        document.getElementById('remove-image-btn').addEventListener('click', () => this.removeImage());
-
-        document.getElementById('card-description').addEventListener('input', (e) => {
-            const counter = document.getElementById('card-description-counter');
-            counter.textContent = `${e.target.value.length}/200 caracteres`;
-        });
-
-        this.importInput.addEventListener('change', (e) => this.importCards(e));
-
-        if (!this.cardsContainer) {
-            console.error('cardsContainer não encontrado no DOM.');
-            this.showToast('error', 'Erro interno: contêiner de cartões não encontrado.');
-            return;
+            console.log('Abrindo modal de detalhes para ID:', id);
+            this.openDetailsModal(id);
+        } else if (action === 'edit-card-menu' && id) {
+            e.stopPropagation();
+            console.log('Abrindo modal de edição para cartão ID:', id);
+            this.openCardModal(id);
+            this.closeActionMenu(menu);
+        } else if (action === 'copy-access' && access) {
+            e.stopPropagation();
+            console.log('Copiando acesso:', access);
+            navigator.clipboard.writeText(access);
+            this.showToast('success', 'Caminho copiado!');
+        } else if (action === 'duplicate-card-menu' && id) {
+            e.stopPropagation();
+            console.log('Duplicando cartão ID:', id);
+            this.duplicateCard(id);
+            this.closeActionMenu(menu);
+        } else if (action === 'delete-card-menu' && id) {
+            e.stopPropagation();
+            console.log('Abrindo modal de exclusão para ID:', id);
+            this.openDeleteModal(id);
+            this.closeActionMenu(menu);
+        } else if (action === 'export-card-menu' && id) {
+            e.stopPropagation();
+            console.log('Exportando cartão ID:', id);
+            this.exportSingleCard(id);
+            this.closeActionMenu(menu);
+        } else if (action === 'open-image' && image) {
+            e.stopPropagation();
+            console.log('Abrindo modal de imagem:', image);
+            this.openImageModal(image);
+        } else {
+            console.log('Nenhuma ação correspondente encontrada para o clique.');
         }
+    });
 
-        this.cardsContainer.addEventListener('click', (e) => {
-            console.log('Clique em cardsContainer, elemento:', e.target);
-            const actionElement = e.target.closest('[data-action]');
-            const idElement = e.target.closest('[data-id]');
-            const action = actionElement?.dataset.action;
-            const id = idElement?.dataset.id;
-            const image = e.target.closest('[data-image]')?.dataset.image;
-            const access = e.target.closest('[data-access]')?.dataset.access;
-            const menu = e.target.closest('.action-menu-item')?.parentElement;
-
-            console.log('Ação detectada:', action, 'ID do cartão:', id);
-
-            if (action === 'open-details' && id) {
-                e.stopPropagation();
-                console.log('Abrindo modal de detalhes para ID:', id);
-                this.openDetailsModal(id);
-            } else if (action === 'edit-card-menu' && id) {
-                e.stopPropagation();
-                console.log('Abrindo modal de edição para cartão ID:', id);
-                this.openCardModal(id);
-                this.closeActionMenu(menu);
-            } else if (action === 'copy-access' && access) {
-                e.stopPropagation();
-                console.log('Copiando acesso:', access);
-                navigator.clipboard.writeText(access);
-                this.showToast('success', 'Caminho copiado!');
-            } else if (action === 'duplicate-card-menu' && id) {
-                e.stopPropagation();
-                console.log('Duplicando cartão ID:', id);
-                this.duplicateCard(id);
-                this.closeActionMenu(menu);
-            } else if (action === 'delete-card-menu' && id) {
-                e.stopPropagation();
-                console.log('Abrindo modal de exclusão para ID:', id);
-                this.openDeleteModal(id);
-                this.closeActionMenu(menu);
-            } else if (action === 'export-card-menu' && id) {
-                e.stopPropagation();
-                console.log('Exportando cartão ID:', id);
-                this.exportSingleCard(id);
-                this.closeActionMenu(menu);
-            } else if (action === 'open-image' && image) {
-                e.stopPropagation();
-                console.log('Abrindo modal de imagem:', image);
-                this.openImageModal(image);
-            } else {
-                console.log('Nenhuma ação correspondente encontrada para o clique.');
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'n') {
+            e.preventDefault();
+            this.openCardModal();
+        }
+        if (e.key === 'Escape') {
+            if (this.cardModal.classList.contains('show')) {
+                this.closeModal('card');
+            } else if (this.detailsModal.classList.contains('show')) {
+                this.closeModal('details');
+            } else if (this.deleteModal.classList.contains('show')) {
+                this.closeModal('delete');
+            } else if (this.helpModal.classList.contains('show')) {
+                this.closeModal('help');
+            } else if (this.imageModal.classList.contains('show')) {
+                this.closeModal('image');
+            } else if (this.exportModal.classList.contains('show')) {
+                this.closeModal('export');
             }
-        });
-
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 'n') {
+        }
+        if ((e.ctrlKey && e.key === 's') || e.key === 'Enter') {
+            if (this.cardModal.classList.contains('show')) {
                 e.preventDefault();
-                this.openCardModal();
-            }
-            if (e.key === 'Escape') {
-                if (this.cardModal.classList.contains('show')) {
-                    this.closeModal('card');
-                } else if (this.detailsModal.classList.contains('show')) {
-                    this.closeModal('details');
-                } else if (this.deleteModal.classList.contains('show')) {
-                    this.closeModal('delete');
-                } else if (this.helpModal.classList.contains('show')) {
-                    this.closeModal('help');
-                } else if (this.imageModal.classList.contains('show')) {
-                    this.closeModal('image');
-                } else if (this.exportModal.classList.contains('show')) {
-                    this.closeModal('export');
+                const now = Date.now();
+                if (this.lastSaveTime && now - this.lastSaveTime < 500) {
+                    console.log('Ação de salvamento por teclado ignorada devido a debounce.');
+                    return;
                 }
+                this.cardForm.dispatchEvent(new Event('submit'));
             }
-            if ((e.ctrlKey && e.key === 's') || e.key === 'Enter') {
-                if (this.cardModal.classList.contains('show')) {
-                    e.preventDefault();
-                    const now = Date.now();
-                    if (this.lastSaveTime && now - this.lastSaveTime < 500) {
-                        console.log('Ação de salvamento por teclado ignorada devido a debounce.');
-                        return;
-                    }
-                    this.cardForm.dispatchEvent(new Event('submit'));
-                }
-            }
-        });
+        }
+    });
 
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.card-actions')) {
-                document.querySelectorAll('.action-menu').forEach(menu => {
-                    menu.classList.add('hidden');
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.card-actions')) {
+            document.querySelectorAll('.action-menu').forEach(menu => {
+                menu.classList.add('hidden');
+            });
+        }
+    });
+
+    this.cardsContainer.addEventListener('click', (e) => {
+        const menuBtn = e.target.closest('.menu-btn');
+        if (menuBtn) {
+            e.stopPropagation();
+            const menu = menuBtn.nextElementSibling;
+            if (menu && menu.classList.contains('action-menu')) {
+                document.querySelectorAll('.action-menu').forEach(otherMenu => {
+                    if (otherMenu !== menu) otherMenu.classList.add('hidden');
                 });
+                menu.classList.toggle('hidden');
             }
-        });
-
-        this.cardsContainer.addEventListener('click', (e) => {
-            const menuBtn = e.target.closest('.menu-btn');
-            if (menuBtn) {
-                e.stopPropagation();
-                const menu = menuBtn.nextElementSibling;
-                if (menu && menu.classList.contains('action-menu')) {
-                    document.querySelectorAll('.action-menu').forEach(otherMenu => {
-                        if (otherMenu !== menu) otherMenu.classList.add('hidden');
-                    });
-                    menu.classList.toggle('hidden');
-                }
-            }
-        });
-    }
+        }
+    });
+}
 
     generateCardCode(tag) {
         const existingCodes = this.cards

@@ -24,13 +24,24 @@ body {
 }
 
 header {
-    background: var(--cor-principal);
-    padding: 1rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    padding: 1rem 1rem;
     border-radius: 1rem;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 25px 25px rgba(14, 15, 20, 0.186);
     width: 95%;
     max-width: 1300px;
     margin: 0.5rem auto;
+    background: var(--cor-principal);
+}
+
+.card-preview {
+    transition: opacity 0.3s ease; /* Transição suave para opacidade */
+}
+
+.card-preview.fading {
+    opacity: 0.2; /* Opacidade reduzida quando o cartão está sob o header */
 }
 
 .dark header {
@@ -102,6 +113,7 @@ textarea:focus {
 #search-input {
     background: #F9FAFB;
     color: #1F2937;
+    width: 20rem;
 }
 
 #search-input::placeholder {
@@ -146,13 +158,27 @@ textarea.error {
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 1.5rem;
 }
-
 .card-preview {
     background: #FFFFFF;
     border-radius: 1rem;
     padding: 1.5rem;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    z-index: 1;
+    /* Gradiente suave mais forte: aumenta a área de transparência */
+    --_fade: var(--fade-percentage, 100%); /* aumente aqui para 20% */
+    mask-image: linear-gradient(
+        to bottom,
+        transparent 0%,
+        #000 calc(var(--_fade)),
+        #000 100%
+    );
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0%,
+        #000 calc(var(--_fade)),
+        #000 100%
+    );
 }
 
 .dark .card-preview {
@@ -290,6 +316,30 @@ textarea.error {
 
 .card-image {
     position: relative;
+}
+
+#details-name {
+    font-family: 'Poppins', sans-serif;
+    max-width: 75%;
+    line-height: 1.4rem;
+    min-height: 2.8rem;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    white-space: normal;
+}
+
+#details-name:hover {
+    color: #DC2626;
+}
+
+.dark #details-name {
+    color: var(--texto-escuro);
+}
+
+.dark #details-name:hover {
+    color: #FBBF24;
 }
 
 #details-code {
@@ -441,7 +491,7 @@ textarea.error {
 
 .access-path {
     display: flex;
-    align-items: flex-start; /* Align items to the top */
+    align-items: flex-start;
     gap: 0.5rem;
     background: #F9FAFB;
     border: 1px solid #E5E7EB;
@@ -478,7 +528,7 @@ textarea.error {
     border: none;
     color: var(--texto-claro);
     transition: color 0.2s ease, transform 0.2s ease;
-    margin-top: 0.1rem; /* Fine-tune vertical alignment */
+    margin-top: 0.1rem;
 }
 
 .copy-access-btn:hover {
@@ -746,5 +796,8 @@ textarea.error {
     .access-path-text {
         max-width: calc(100% - 1.8rem);
         font-size: 0.8rem;
+    }
+    #search-input {
+        width: 12rem;
     }
 }

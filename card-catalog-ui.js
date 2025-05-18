@@ -1,59 +1,59 @@
 class CardCatalogUI extends CardCatalog {
-    createCardElement(card) {
-        const displayName = this.escapeHTML(card.name);
-        const accessText = card.access ? this.escapeHTML(card.access) : '';
-        const div = document.createElement('div');
-        div.className = 'card-preview rounded-2xl shadow-lg p-4 sm:p-6 relative bg-white dark:bg-gray-700 transition-all';
-        div.innerHTML = `
-            <div class="card-header flex justify-between items-start gap-2">
-                <h3 class="cursor-pointer flex-1" data-action="open-details" data-id="${card.id}">${displayName}</h3>
-                <div class="card-actions relative">
-                    <button class="card-action-btn menu-btn" title="Mais ações" aria-label="Mais ações">
-                        <span class="material-icons text-lg">more_vert</span>
-                    </button>
-                    <ul class="action-menu hidden absolute right-0 top-full mt-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg z-10">
-                        <li class="action-menu-item" data-action="edit-card-menu" data-id="${card.id}">
-                            <span class="material-icons text-sm mr-2">edit</span> Editar
-                        </li>
-                        <li class="action-menu-item" data-action="duplicate-card-menu" data-id="${card.id}">
-                            <span class="material-icons text-sm mr-2">content_copy</span> Duplicar
-                        </li>
-                        <li class="action-menu-item" data-action="delete-card-menu" data-id="${card.id}">
-                            <span class="material-icons text-sm mr-2">delete</span> Deletar
-                        </li>
-                        <li class="action-menu-item" data-action="export-card-menu" data-id="${card.id}">
-                            <span class="material-icons text-sm mr-2">download</span> Exportar
-                        </li>
-                    </ul>
-                </div>
+createCardElement(card) {
+    const displayName = this.escapeHTML(card.name);
+    const accessText = card.access ? this.escapeHTML(card.access) : '';
+    const div = document.createElement('div');
+    div.className = 'card-preview'; // Certifique-se de que está assim
+    div.innerHTML = `
+        <div class="card-header flex justify-between items-start gap-2">
+            <h3 class="cursor-pointer flex-1" data-action="open-details" data-id="${card.id}">${displayName}</h3>
+            <div class="card-actions relative">
+                <button class="card-action-btn menu-btn" title="Mais ações" aria-label="Mais ações">
+                    <span class="material-icons text-lg">more_vert</span>
+                </button>
+                <ul class="action-menu hidden absolute right-0 top-full mt-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg z-10">
+                    <li class="action-menu-item" data-action="edit-card-menu" data-id="${card.id}">
+                        <span class="material-icons text-sm mr-2">edit</span> Editar
+                    </li>
+                    <li class="action-menu-item" data-action="duplicate-card-menu" data-id="${card.id}">
+                        <span class="material-icons text-sm mr-2">content_copy</span> Duplicar
+                    </li>
+                    <li class="action-menu-item" data-action="delete-card-menu" data-id="${card.id}">
+                        <span class="material-icons text-sm mr-2">delete</span> Deletar
+                    </li>
+                    <li class="action-menu-item" data-action="export-card-menu" data-id="${card.id}">
+                        <span class="material-icons text-sm mr-2">download</span> Exportar
+                    </li>
+                </ul>
             </div>
-            ${card.image ? `
-            <div class="card-image mt-2 relative">
-                <img src="${card.image}" alt="Imagem do cartão ${this.escapeHTML(card.name)}" data-action="open-image" data-image="${card.image}">
+        </div>
+        ${card.image ? `
+        <div class="card-image mt-2 relative">
+            <img src="${card.image}" alt="Imagem do cartão ${this.escapeHTML(card.name)}" data-action="open-image" data-image="${card.image}">
+        </div>
+        ` : ''}
+        <div class="card-footer mt-6">
+            ${card.access ? `
+            <div class="access-path mt-2">
+                <button class="copy-access-btn text-gray-600 dark:text-gray-200 hover:text-red-600 dark:hover:text-yellow-500 transition-all" data-action="copy-access" data-access="${card.access}" title="Copiar caminho de acesso" aria-label="Copiar caminho de acesso">
+                    <span class="material-icons text-sm">folder_copy</span>
+                </button>
+                <span class="access-path-text">${accessText}</span>
             </div>
             ` : ''}
-            <div class="card-footer mt-6">
-                ${card.access ? `
-                <div class="access-path mt-2">
-                    <button class="copy-access-btn text-gray-600 dark:text-gray-200 hover:text-red-600 dark:hover:text-yellow-500 transition-all" data-action="copy-access" data-access="${card.access}" title="Copiar caminho de acesso" aria-label="Copiar caminho de acesso">
-                        <span class="material-icons text-sm">folder_copy</span>
-                    </button>
-                    <span class="access-path-text">${accessText}</span>
-                </div>
-                ` : ''}
-            </div>
-        `;
-        return div;
-    }
+        </div>
+    `;
+    return div;
+}
 
-    renderCards() {
-        this.cardsContainer.innerHTML = '';
-        const filteredCards = this.getFilteredCards();
-        filteredCards.forEach(card => {
-            this.cardsContainer.appendChild(this.createCardElement(card));
-        });
-    }
-
+renderCards() {
+    this.cardsContainer.innerHTML = '';
+    const filteredCards = this.getFilteredCards();
+    filteredCards.forEach(card => {
+        this.cardsContainer.appendChild(this.createCardElement(card));
+    });
+    this.observeCardFade();
+}
     getFilteredCards() {
         const search = this.searchInput.value.toLowerCase();
         const tag = this.tagFilter.value;
