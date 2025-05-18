@@ -277,24 +277,7 @@ textarea.error {
 }
 
 .card-footer {
-    margin-top: 1.5rem;
-}
-
-.card-footer .tag-code {
-    background: #E2E8F0;
-    color: var(--texto-claro);
-    font-size: 0.8rem;
-    padding: 0.3rem 0.6rem;
-    border-radius: 0.3rem;
-}
-
-.dark .card-footer .tag-code {
-    background: #4B5563;
-    color: var(--texto-escuro);
-}
-
-.copy-access-btn:hover {
-    transform: scale(1.1);
+    margin-top: 1rem;
 }
 
 .card-image img {
@@ -303,6 +286,24 @@ textarea.error {
     border-radius: 0.5rem;
     width: 100%;
     cursor: pointer;
+}
+
+.card-image {
+    position: relative;
+}
+
+#details-code {
+    background: #E2E8F0;
+    color: var(--texto-claro);
+    font-size: 0.8rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 0.3rem;
+    display: inline-block;
+}
+
+.dark #details-code {
+    background: #4B5563;
+    color: var(--texto-escuro);
 }
 
 .fab {
@@ -364,9 +365,9 @@ textarea.error {
     position: absolute;
     top: 0.5rem;
     right: 0.5rem;
-    width: 1rem;
-    height: 1rem;
-    font-size: 1rem;
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -438,15 +439,85 @@ textarea.error {
     border-radius: 0.5rem;
 }
 
+.access-path {
+    display: flex;
+    align-items: flex-start; /* Align items to the top */
+    gap: 0.5rem;
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    transition: background 0.3s ease, border-color 0.3s ease;
+    font-family: 'Fira Mono', monospace;
+}
+
+.dark .access-path {
+    background: #2D3748;
+    border-color: #4B5563;
+    font-family: 'Fira Mono', monospace;
+}
+
+.access-path:hover {
+    background: #E5E7EB;
+    border-color: var(--cor-principal);
+}
+
+.dark .access-path:hover {
+    background: #374151;
+    border-color: var(--cor-destaque);
+}
+
+.copy-access-btn {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--texto-claro);
+    transition: color 0.2s ease, transform 0.2s ease;
+    margin-top: 0.1rem; /* Fine-tune vertical alignment */
+}
+
+.copy-access-btn:hover {
+    color: var(--cor-principal);
+    transform: scale(1.05);
+}
+
+.dark .copy-access-btn {
+    color: var(--texto-escuro);
+}
+
+.dark .copy-access-btn:hover {
+    color: var(--cor-destaque);
+}
+
+.copy-access-btn .material-icons {
+    font-size: 1.1rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .access-path-text {
     display: -webkit-box;
-    max-width: 100%;
+    max-width: calc(100% - 2.4rem);
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
     font-size: 0.9rem;
     line-height: 1.4;
+    color: var(--texto-claro);
+    font-family: 'Fira Mono', monospace;
+}
+
+.dark .access-path-text {
+    color: var(--texto-escuro);
+    font-family: 'Fira Mono', monospace;
 }
 
 #details-modal .modal-content {
@@ -566,7 +637,7 @@ textarea.error {
 
 #export-modal h2 {
     font-family: 'Poppins', sans-serif;
-    font-size: 1.8rem; /* Tamanho da fonte do título ajustado */
+    font-size: 1.8rem;
     font-weight: bold;
     color: var(--texto-claro);
     margin-bottom: 1rem;
@@ -613,12 +684,24 @@ textarea.error {
         max-height: 120px;
         font-size: 0.9rem;
     }
+    .access-path {
+        padding: 0.4rem;
+        gap: 0.4rem;
+    }
+    .copy-access-btn {
+        width: 20px;
+        height: 20px;
+    }
+    .access-path-text {
+        max-width: calc(100% - 2rem);
+        font-size: 0.85rem;
+    }
     #export-complete-btn,
     #export-separate-btn {
         width: 100%;
     }
     #export-modal h2 {
-        font-size: 1.125rem; /* Tamanho da fonte reduzido em telas menores */
+        font-size: 1.125rem;
     }
 }
 
@@ -649,5 +732,19 @@ textarea.error {
     .card-action-btn {
         width: 1.4rem;
         height: 1.4rem;
+    }
+    .access-path {
+        padding: 0.3rem;
+    }
+    .copy-access-btn {
+        width: 18px;
+        height: 18px;
+    }
+    .copy-access-btn .material-icons {
+        font-size: 0.8rem;
+    }
+    .access-path-text {
+        max-width: calc(100% - 1.8rem);
+        font-size: 0.8rem;
     }
 }

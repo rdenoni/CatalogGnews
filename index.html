@@ -51,8 +51,13 @@
     <!-- Carrega ícones e fontes do Google -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&family=Open+Sans:wght@400&display=swap" rel="stylesheet">
-    <!-- Carrega nossos estilos personalizados -->
-    <link rel="stylesheet" href="styles.css">
+   
+       <!-- Carrega os scripts divididos -->
+    <script src="card-catalog-core.js" defer></script>
+    <script src="card-catalog-ui.js" defer></script>
+    <script src="card-catalog-data.js" defer></script>
+   
+
 </head>
 <body class="font-sans">
     <div id="app" class="min-h-screen">
@@ -204,7 +209,7 @@
 
         <!-- Modal para ver imagem ampliada -->
         <div id="image-modal" class="modal hidden" role="dialog" aria-labelledby="image-modal-title">
-            <div class="modal-content bg-white dark:bg-gray-800 rounded-2xl p-4">
+            <div class="modal-content bg-white dark:bg-gray-800 rounded-3xl p-4">
                 <button class="modal-close bg-gray-200 dark:bg-gray-700 hover:bg-red-600 dark:hover:bg-yellow-500 text-gray-800 dark:text-gray-200 rounded-full w-10 h-10 flex items-center justify-center" onclick="cardCatalog.closeModal('image')" title="Fechar">
                     <span class="material-icons">close</span>
                 </button>
@@ -287,7 +292,7 @@
 
         <!-- Modal para opções de exportação -->
         <div id="export-modal" class="modal hidden" role="dialog" aria-labelledby="export-modal-title">
-            <div class="modal-content bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md p-6">
+            <div class="modal-content bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md p-10">
                 <button class="modal-close bg-gray-200 dark:bg-gray-700 hover:bg-red-600 dark:hover:bg-yellow-500 text-gray-800 dark:text-gray-200 rounded-full w-10 h-10 flex items-center justify-center" onclick="cardCatalog.closeModal('export')" title="Fechar">
                     <span class="material-icons">close</span>
                 </button>
@@ -354,10 +359,8 @@
     <!-- Carrega a biblioteca para importar/exportar arquivos -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js" defer></script>
 
+    <!-- Carrega nossos estilos personalizados -->
+    <link rel="stylesheet" href="styles.css">
 
-    <!-- Carrega os scripts divididos -->
-    <script src="card-catalog-core.js" defer></script>
-    <script src="card-catalog-ui.js" defer></script>
-    <script src="card-catalog-data.js" defer></script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 class CardCatalogUI extends CardCatalog {
     createCardElement(card) {
         const displayName = this.escapeHTML(card.name);
+        const accessText = card.access ? this.escapeHTML(card.access) : '';
         const div = document.createElement('div');
         div.className = 'card-preview rounded-2xl shadow-lg p-4 sm:p-6 relative bg-white dark:bg-gray-700 transition-all';
         div.innerHTML = `
@@ -27,18 +28,17 @@ class CardCatalogUI extends CardCatalog {
                 </div>
             </div>
             ${card.image ? `
-            <div class="card-image mt-2">
+            <div class="card-image mt-2 relative">
                 <img src="${card.image}" alt="Imagem do cartão ${this.escapeHTML(card.name)}" data-action="open-image" data-image="${card.image}">
             </div>
             ` : ''}
             <div class="card-footer mt-6">
-                <span class="tag-code">${this.escapeHTML(card.code || 'Sem Código')}</span>
                 ${card.access ? `
                 <div class="access-path mt-2">
                     <button class="copy-access-btn text-gray-600 dark:text-gray-200 hover:text-red-600 dark:hover:text-yellow-500 transition-all" data-action="copy-access" data-access="${card.access}" title="Copiar caminho de acesso" aria-label="Copiar caminho de acesso">
-                        <span class="material-icons text-sm mr-1">content_copy</span>
+                        <span class="material-icons text-sm">folder_copy</span>
                     </button>
-                    <a href="${card.access}" target="_blank" class="text-gray-600 dark:text-gray-200 hover:text-red-600 dark:hover:text-yellow-500 truncate flex-1" title="Acessar ${this.escapeHTML(card.access)}">${this.escapeHTML(card.access)}</a>
+                    <span class="access-path-text">${accessText}</span>
                 </div>
                 ` : ''}
             </div>
@@ -78,6 +78,45 @@ class CardCatalogUI extends CardCatalog {
         return filtered;
     }
 
+    clearCardForm() {
+        const cardForm = document.getElementById('card-form');
+        if (!cardForm) {
+            this.showToast('error', 'Erro interno: formulário de cartão não encontrado.');
+            return;
+        }
+        cardForm.reset();
+
+        const cardIdInput = document.getElementById('card-id');
+        if (cardIdInput) {
+            cardIdInput.value = '';
+        }
+
+        const errorElements = ['card-name-error', 'card-youtube-error', 'card-access-error'];
+        errorElements.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        });
+
+        const descriptionCounter = document.getElementById('card-description-counter');
+        if (descriptionCounter) {
+            descriptionCounter.textContent = '0/200 caracteres';
+        }
+
+        const imagePreview = document.getElementById('card-image-preview');
+        const imagePath = document.getElementById('card-image-path');
+        const imageInput = document.getElementById('card-image-input');
+        const removeImageBtn = document.getElementById('remove-image-btn');
+        if (imagePreview) imagePreview.classList.add('hidden');
+        if (imagePath) imagePath.textContent = '';
+        if (imageInput) {
+            imageInput.dataset.url = '';
+            imageInput.value = '';
+        }
+        if (removeImageBtn) removeImageBtn.classList.add('hidden');
+
+        this.showToast('success', 'Formulário limpo com sucesso!');
+    }
+
     updateCardCounts() {
         this.totalCards.textContent = this.cards.length;
         this.filteredCards.textContent = this.getFilteredCards().length;
@@ -90,37 +129,31 @@ class CardCatalogUI extends CardCatalog {
     }
 
     openCardModal(cardId = '') {
-        console.log('Abrindo modal de cartão', {
-            cardId,
-            timestamp: new Date().toISOString(),
-            modalAlreadyOpen: this.cardModal.classList.contains('show')
-        });
-
         if (!this.cardModal) {
-            console.error('cardModal não encontrado no DOM.');
             this.showToast('error', 'Erro interno: modal de cartão não encontrado.');
             return;
         }
 
         if (this.cardModal.classList.contains('show')) {
-            console.log('Modal já aberto, evitando reinicialização desnecessária');
             return;
         }
 
         this.cardModal.classList.add('show');
         const cardForm = document.getElementById('card-form');
         if (!cardForm) {
-            console.error('card-form não encontrado no DOM.');
             this.showToast('error', 'Erro interno: formulário de cartão não encontrado.');
             return;
         }
         cardForm.reset();
 
+        const youtubeInput = document.getElementById('card-youtube');
+        if (youtubeInput) {
+            youtubeInput.value = 'http://';
+        }
+
         const cardIdInput = document.getElementById('card-id');
         if (cardIdInput) {
             cardIdInput.value = cardId;
-        } else {
-            console.warn('card-id não encontrado no DOM.');
         }
 
         const errorElements = ['card-name-error', 'card-youtube-error', 'card-access-error'];
@@ -149,14 +182,11 @@ class CardCatalogUI extends CardCatalog {
         const modalTitle = document.getElementById('modal-title');
         if (modalTitle) {
             modalTitle.textContent = cardId ? 'Editar Cartão' : 'Adicionar Cartão';
-        } else {
-            console.warn('modal-title não encontrado no DOM.');
         }
 
         if (cardId) {
             const card = this.cards.find(c => c.id === cardId);
             if (card) {
-                console.log('Preenchendo modal com dados do cartão:', card);
                 const nameInput = document.getElementById('card-name');
                 const tagInput = document.getElementById('card-tag');
                 const youtubeInput = document.getElementById('card-youtube');
@@ -186,7 +216,6 @@ class CardCatalogUI extends CardCatalog {
                     removeImageBtn.classList.remove('hidden');
                 }
             } else {
-                console.warn('Cartão não encontrado para ID:', cardId);
                 this.showToast('error', 'Cartão não encontrado.');
                 this.closeModal('card');
             }
@@ -236,9 +265,7 @@ class CardCatalogUI extends CardCatalog {
     }
 
     openImageModal(imageUrl) {
-        console.log('Abrindo modal de imagem com URL:', imageUrl);
         if (!this.imageModal || !this.imageModalContent) {
-            console.error('imageModal ou imageModalContent não encontrado no DOM.');
             this.showToast('error', 'Erro interno: modal de imagem não encontrado.');
             return;
         }
@@ -272,6 +299,23 @@ class CardCatalogUI extends CardCatalog {
         this.renderCards();
         this.updateCardCounts();
         this.clearSearch.classList.toggle('hidden', !this.searchInput.value);
+    }
+
+    showToast(type, message) {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type} flex items-center gap-2`;
+        toast.innerHTML = `
+            <span class="material-icons">${type === 'success' ? 'check_circle' : 'error'}</span>
+            <span>${message}</span>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 100);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     }
 }
 

@@ -38,6 +38,13 @@ class CardCatalogData extends CardCatalogUI {
         }
     }
 
+    closeActionMenu(menu) {
+        if (menu && menu.classList.contains('action-menu')) {
+            menu.classList.add('hidden');
+            console.log('Menu de ação fechado.');
+        }
+    }
+
     initializeEventListeners() {
         if (this.isEventListenersInitialized) {
             console.log('Event listeners já inicializados. Ignorando.');
@@ -108,6 +115,7 @@ class CardCatalogData extends CardCatalogUI {
             const id = idElement?.dataset.id;
             const image = e.target.closest('[data-image]')?.dataset.image;
             const access = e.target.closest('[data-access]')?.dataset.access;
+            const menu = e.target.closest('.action-menu-item')?.parentElement;
 
             console.log('Ação detectada:', action, 'ID do cartão:', id);
 
@@ -119,6 +127,7 @@ class CardCatalogData extends CardCatalogUI {
                 e.stopPropagation();
                 console.log('Abrindo modal de edição para cartão ID:', id);
                 this.openCardModal(id);
+                this.closeActionMenu(menu);
             } else if (action === 'copy-access' && access) {
                 e.stopPropagation();
                 console.log('Copiando acesso:', access);
@@ -128,14 +137,17 @@ class CardCatalogData extends CardCatalogUI {
                 e.stopPropagation();
                 console.log('Duplicando cartão ID:', id);
                 this.duplicateCard(id);
+                this.closeActionMenu(menu);
             } else if (action === 'delete-card-menu' && id) {
                 e.stopPropagation();
                 console.log('Abrindo modal de exclusão para ID:', id);
                 this.openDeleteModal(id);
+                this.closeActionMenu(menu);
             } else if (action === 'export-card-menu' && id) {
                 e.stopPropagation();
                 console.log('Exportando cartão ID:', id);
                 this.exportSingleCard(id);
+                this.closeActionMenu(menu);
             } else if (action === 'open-image' && image) {
                 e.stopPropagation();
                 console.log('Abrindo modal de imagem:', image);
@@ -179,10 +191,6 @@ class CardCatalogData extends CardCatalogUI {
         });
 
         document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal') && e.target.classList.contains('show')) {
-                const modalType = e.target.id.split('-')[0];
-                this.closeModal(modalType);
-            }
             if (!e.target.closest('.card-actions')) {
                 document.querySelectorAll('.action-menu').forEach(menu => {
                     menu.classList.add('hidden');
@@ -406,7 +414,7 @@ class CardCatalogData extends CardCatalogUI {
     }
 
     async exportSingleCard(cardId) {
-        console.log('Exportando cartão único com ID:', cardId);
+        console.log(' publicznych cartão único com ID:', cardId);
         const card = this.cards.find(c => c.id === String(cardId));
         if (!card) {
             console.warn('Cartão não encontrado para exportação:', cardId);
@@ -508,7 +516,7 @@ class CardCatalogData extends CardCatalogUI {
             reader.onload = () => {
                 const dataUrl = reader.result;
                 document.getElementById('card-image-preview').src = dataUrl;
-                document.getElementById('card-image-preview').classList.add('hidden');
+                document.getElementById('card-image-preview').classList.remove('hidden');
                 document.getElementById('card-image-path').textContent = file.name;
                 e.target.dataset.url = dataUrl;
                 document.getElementById('remove-image-btn').classList.remove('hidden');
