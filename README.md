@@ -12,6 +12,8 @@
 - Menu de ação Dropdown para Botões `Editar`/`Duplicar`/`Excluir`
 - Menu de `Exportar` para card individual diretamente no card.
 - Melhorias visuais no modal exportar cartões.
+- Melhorias do Header.
+- Efeito de Fade nos cards abaixo do header.
   
 ---
 
