@@ -2,6 +2,9 @@
 
 ## 🚀 Atualizações Recentes
 
+
+- Atualização automatica do json direto para o github.
+- Função de copiar caminho clicando em cima da div de caminho de acesso.
 - Carregamento automático de JSONs. (Atraves de um link direto do repositorio do Github).
 - Logica de criação de TAGs refeita ( Agora verifica se tem alguma TAG com o mesmo nome e soma +1).
 - Filtro de (Z-A).
