@@ -1,12 +1,25 @@
 class CardCatalogData extends CardCatalogUI {
-constructor() {
-    super();
-    this.cards = [];
-    this.isEventListenersInitialized = false;
-    this.lastDuplicateTime = 0;
-    this.lastSaveTime = 0;
-    this.initializeData();
-}
+    constructor() {
+        super();
+        this.cards = [];
+        this.isEventListenersInitialized = false;
+        this.lastDuplicateTime = 0;
+        this.lastSaveTime = 0;
+        this.lastUploadTime = 0;
+        this.uploadTimeout = null;
+        this.initializeData();
+    }
+
+    debouncedUploadToGitHub() {
+        const now = Date.now();
+        if (this.lastUploadTime && now - this.lastUploadTime < 1000) {
+            clearTimeout(this.uploadTimeout);
+        }
+        this.uploadTimeout = setTimeout(async () => {
+            await this.uploadToGitHub();
+            this.lastUploadTime = now;
+        }, 1000);
+    }
 
     clearLocalStorage() {
         if (typeof localStorage !== 'undefined') {
@@ -15,265 +28,252 @@ constructor() {
         }
     }
 
-async initializeData() {
-    console.log('Iniciando carregamento de dados...');
-    this.clearLocalStorage();
-    try {
-        const response = await fetch('https://raw.githubusercontent.com/rdenoni/CatalogGnews/refs/heads/main/database.json');
-        if (!response.ok) {
-            throw new Error(`Erro ao carregar database.json: ${response.statusText}`);
+    async initializeData() {
+        console.log('Iniciando carregamento de dados...');
+        this.clearLocalStorage();
+        try {
+            const response = await fetch('https://raw.githubusercontent.com/rdenoni/CatalogGnews/refs/heads/main/database.json');
+            if (!response.ok) {
+                throw new Error(`Erro ao carregar database.json: ${response.statusText}`);
+            }
+            this.cards = await response.json();
+            console.log('Estado final de this.cards:', this.cards);
+            this.renderCards();
+            this.updateCardCounts();
+            this.updateLastUpdated();
+            this.observeCardFade();
+        } catch (err) {
+            console.error('Erro ao inicializar dados:', err);
+            this.showToast('error', 'Erro ao carregar cartões do arquivo. Iniciando com lista vazia.');
+            this.cards = [];
+            this.renderCards();
+            this.updateCardCounts();
+            this.updateLastUpdated();
+            this.observeCardFade();
         }
-        this.cards = await response.json();
-        console.log('Estado final de this.cards:', this.cards);
-        this.renderCards();
-        this.updateCardCounts();
-        this.updateLastUpdated();
-        this.observeCardFade();
-    } catch (err) {
-        console.error('Erro ao inicializar dados:', err);
-        this.showToast('error', 'Erro ao carregar cartões do arquivo. Iniciando com lista vazia.');
-        this.cards = [];
-        this.renderCards();
-        this.updateCardCounts();
-        this.updateLastUpdated();
-        this.observeCardFade();
     }
-}
 
-observeCardFade() {
-    const header = document.querySelector('header');
-    if (!header) {
-        console.error('Header não encontrado.');
-        return;
-    }
-    const headerHeight = header.offsetHeight;
-
-    // Fator para aumentar o tamanho do fade (ex: 1.5 = 50% maior)
-    const fadeFactor = 4;
-
-    // Fator para aumentar a intensidade da transparência (ex: 1.5 = 50% mais transparente)
-    const opacityFactor = 4;
-
-    const observer = new IntersectionObserver(
-        (entries) => {
-            entries.forEach((entry) => {
-                const card = entry.target;
-                const cardRect = card.getBoundingClientRect();
-                const cardTop = cardRect.top;
-                const cardHeight = cardRect.height;
-
-                // Calcula a sobreposição do cartão com o header
-                let overlap = 0;
-                if (cardTop < headerHeight && cardTop + cardHeight > 0) {
-                    overlap = Math.max(0, Math.min(headerHeight, cardTop + cardHeight) - Math.max(0, cardTop));
-                }
-
-                // Calcula a porcentagem de fade baseada na sobreposição e aumenta pelo fator
-                let fadePercentage = 0;
-                if (overlap > 0) {
-                    fadePercentage = Math.min((overlap / cardHeight) * 100 * fadeFactor, 100);
-                }
-
-                // Calcula a opacidade baseada na porcentagem de fade e aumenta a intensidade
-                let opacity = 1 - (fadePercentage / 100) * opacityFactor;
-                opacity = Math.max(0, Math.min(opacity, 1));
-
-                card.style.setProperty('--fade-percentage', `${fadePercentage}%`);
-                card.style.setProperty('--fade-opacity', opacity);
-            });
-        },
-        {
-            root: null,
-            threshold: Array.from({ length: 11 }, (_, i) => i / 10),
-            rootMargin: `-${headerHeight}px 0px 0px 0px`
-        }
-    );
-
-    setTimeout(() => {
-        const cards = document.querySelectorAll('.card-preview');
-        if (cards.length === 0) {
+    observeCardFade() {
+        const header = document.querySelector('header');
+        if (!header) {
+            console.error('Header não encontrado.');
             return;
         }
-        cards.forEach((card) => observer.observe(card));
-    }, 100);
-}
+        const headerHeight = header.offsetHeight;
+        const fadeFactor = 4;
+        const opacityFactor = 4;
 
-
-
-closeActionMenu(menu) {
-    if (menu && menu.classList.contains('action-menu')) {
-        menu.classList.add('hidden');
-        console.log('Menu de ação fechado.');
-    }
-}
-
-initializeEventListeners() {
-    if (this.isEventListenersInitialized) {
-        console.log('Event listeners já inicializados. Ignorando.');
-        return;
-    }
-    this.isEventListenersInitialized = true;
-    this.cardForm.addEventListener('submit', (e) => this.saveCard(e));
-
-    this.searchInput.addEventListener('input', () => this.filterCards());
-    this.clearSearch.addEventListener('click', () => {
-        this.searchInput.value = '';
-        this.clearSearch.classList.add('hidden');
-        this.filterCards();
-    });
-
-    this.tagFilter.addEventListener('change', () => this.filterCards());
-    this.sortOrder.addEventListener('change', () => this.filterCards());
-
-    const selectImageBtn = document.getElementById('select-image-btn');
-    selectImageBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log('Botão Selecionar Imagem clicado', {
-            timestamp: new Date().toISOString(),
-            target: e.target.id,
-            isTrusted: e.isTrusted
-        });
-        const imageInput = document.getElementById('card-image-input');
-        imageInput.value = '';
-        console.log('Chamando imageInput.click()');
-        try {
-            imageInput.click();
-        } catch (err) {
-            console.error('Erro ao chamar imageInput.click():', err.message);
-        }
-        console.log('imageInput.click() executado');
-    });
-
-    document.getElementById('card-image-input').addEventListener('change', (e) => {
-        console.log('Evento change disparado no input de imagem', {
-            timestamp: new Date().toISOString(),
-            files: e.target.files.length,
-            isTrusted: e.isTrusted
-        });
-        this.handleImageUpload(e);
-    });
-
-    document.getElementById('remove-image-btn').addEventListener('click', () => this.removeImage());
-
-    document.getElementById('card-description').addEventListener('input', (e) => {
-        const counter = document.getElementById('card-description-counter');
-        counter.textContent = `${e.target.value.length}/200 caracteres`;
-    });
-
-    this.importInput.addEventListener('change', (e) => this.importCards(e));
-
-    if (!this.cardsContainer) {
-        console.error('cardsContainer não encontrado no DOM.');
-        this.showToast('error', 'Erro interno: contêiner de cartões não encontrado.');
-        return;
-    }
-
-    this.cardsContainer.addEventListener('click', (e) => {
-        console.log('Clique em cardsContainer, elemento:', e.target);
-        const actionElement = e.target.closest('[data-action]');
-        const idElement = e.target.closest('[data-id]');
-        const action = actionElement?.dataset.action;
-        const id = idElement?.dataset.id;
-        const image = e.target.closest('[data-image]')?.dataset.image;
-        const access = e.target.closest('[data-access]')?.dataset.access;
-        const menu = e.target.closest('.action-menu-item')?.parentElement;
-
-        console.log('Ação detectada:', action, 'ID do cartão:', id);
-
-        if (action === 'open-details' && id) {
-            e.stopPropagation();
-            console.log('Abrindo modal de detalhes para ID:', id);
-            this.openDetailsModal(id);
-        } else if (action === 'edit-card-menu' && id) {
-            e.stopPropagation();
-            console.log('Abrindo modal de edição para cartão ID:', id);
-            this.openCardModal(id);
-            this.closeActionMenu(menu);
-        } else if (action === 'copy-access' && access) {
-            e.stopPropagation();
-            console.log('Copiando acesso:', access);
-            navigator.clipboard.writeText(access);
-            this.showToast('success', 'Caminho copiado!');
-        } else if (action === 'duplicate-card-menu' && id) {
-            e.stopPropagation();
-            console.log('Duplicando cartão ID:', id);
-            this.duplicateCard(id);
-            this.closeActionMenu(menu);
-        } else if (action === 'delete-card-menu' && id) {
-            e.stopPropagation();
-            console.log('Abrindo modal de exclusão para ID:', id);
-            this.openDeleteModal(id);
-            this.closeActionMenu(menu);
-        } else if (action === 'export-card-menu' && id) {
-            e.stopPropagation();
-            console.log('Exportando cartão ID:', id);
-            this.exportSingleCard(id);
-            this.closeActionMenu(menu);
-        } else if (action === 'open-image' && image) {
-            e.stopPropagation();
-            console.log('Abrindo modal de imagem:', image);
-            this.openImageModal(image);
-        } else {
-            console.log('Nenhuma ação correspondente encontrada para o clique.');
-        }
-    });
-
-    document.addEventListener('keydown', (e) => {
-        if (e.ctrlKey && e.key === 'n') {
-            e.preventDefault();
-            this.openCardModal();
-        }
-        if (e.key === 'Escape') {
-            if (this.cardModal.classList.contains('show')) {
-                this.closeModal('card');
-            } else if (this.detailsModal.classList.contains('show')) {
-                this.closeModal('details');
-            } else if (this.deleteModal.classList.contains('show')) {
-                this.closeModal('delete');
-            } else if (this.helpModal.classList.contains('show')) {
-                this.closeModal('help');
-            } else if (this.imageModal.classList.contains('show')) {
-                this.closeModal('image');
-            } else if (this.exportModal.classList.contains('show')) {
-                this.closeModal('export');
-            }
-        }
-        if ((e.ctrlKey && e.key === 's') || e.key === 'Enter') {
-            if (this.cardModal.classList.contains('show')) {
-                e.preventDefault();
-                const now = Date.now();
-                if (this.lastSaveTime && now - this.lastSaveTime < 500) {
-                    console.log('Ação de salvamento por teclado ignorada devido a debounce.');
-                    return;
-                }
-                this.cardForm.dispatchEvent(new Event('submit'));
-            }
-        }
-    });
-
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.card-actions')) {
-            document.querySelectorAll('.action-menu').forEach(menu => {
-                menu.classList.add('hidden');
-            });
-        }
-    });
-
-    this.cardsContainer.addEventListener('click', (e) => {
-        const menuBtn = e.target.closest('.menu-btn');
-        if (menuBtn) {
-            e.stopPropagation();
-            const menu = menuBtn.nextElementSibling;
-            if (menu && menu.classList.contains('action-menu')) {
-                document.querySelectorAll('.action-menu').forEach(otherMenu => {
-                    if (otherMenu !== menu) otherMenu.classList.add('hidden');
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    const card = entry.target;
+                    const cardRect = card.getBoundingClientRect();
+                    const cardTop = cardRect.top;
+                    const cardHeight = cardRect.height;
+                    let overlap = 0;
+                    if (cardTop < headerHeight && cardTop + cardHeight > 0) {
+                        overlap = Math.max(0, Math.min(headerHeight, cardTop + cardHeight) - Math.max(0, cardTop));
+                    }
+                    let fadePercentage = 0;
+                    if (overlap > 0) {
+                        fadePercentage = Math.min((overlap / cardHeight) * 100 * fadeFactor, 100);
+                    }
+                    let opacity = 1 - (fadePercentage / 100) * opacityFactor;
+                    opacity = Math.max(0, Math.min(opacity, 1));
+                    card.style.setProperty('--fade-percentage', `${fadePercentage}%`);
+                    card.style.setProperty('--fade-opacity', opacity);
                 });
-                menu.classList.toggle('hidden');
+            },
+            {
+                root: null,
+                threshold: Array.from({ length: 11 }, (_, i) => i / 10),
+                rootMargin: `-${headerHeight}px 0px 0px 0px`
             }
+        );
+
+        setTimeout(() => {
+            const cards = document.querySelectorAll('.card-preview');
+            if (cards.length === 0) {
+                return;
+            }
+            cards.forEach((card) => observer.observe(card));
+        }, 100);
+    }
+
+    closeActionMenu(menu) {
+        if (menu && menu.classList.contains('action-menu')) {
+            menu.classList.add('hidden');
+            console.log('Menu de ação fechado.');
         }
-    });
-}
+    }
+
+    initializeEventListeners() {
+        if (this.isEventListenersInitialized) {
+            console.log('Event listeners já inicializados. Ignorando.');
+            return;
+        }
+        this.isEventListenersInitialized = true;
+        this.cardForm.addEventListener('submit', (e) => this.saveCard(e));
+
+        this.searchInput.addEventListener('input', () => this.filterCards());
+        this.clearSearch.addEventListener('click', () => {
+            this.searchInput.value = '';
+            this.clearSearch.classList.add('hidden');
+            this.filterCards();
+        });
+
+        this.tagFilter.addEventListener('change', () => this.filterCards());
+        this.sortOrder.addEventListener('change', () => this.filterCards());
+
+        const selectImageBtn = document.getElementById('select-image-btn');
+        selectImageBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Botão Selecionar Imagem clicado', {
+                timestamp: new Date().toISOString(),
+                target: e.target.id,
+                isTrusted: e.isTrusted
+            });
+            const imageInput = document.getElementById('card-image-input');
+            imageInput.value = '';
+            console.log('Chamando imageInput.click()');
+            try {
+                imageInput.click();
+            } catch (err) {
+                console.error('Erro ao chamar imageInput.click():', err.message);
+            }
+            console.log('imageInput.click() executado');
+        });
+
+        document.getElementById('card-image-input').addEventListener('change', (e) => {
+            console.log('Evento change disparado no input de imagem', {
+                timestamp: new Date().toISOString(),
+                files: e.target.files.length,
+                isTrusted: e.isTrusted
+            });
+            this.handleImageUpload(e);
+        });
+
+        document.getElementById('remove-image-btn').addEventListener('click', () => this.removeImage());
+
+        document.getElementById('card-description').addEventListener('input', (e) => {
+            const counter = document.getElementById('card-description-counter');
+            counter.textContent = `${e.target.value.length}/200 caracteres`;
+        });
+
+        this.importInput.addEventListener('change', (e) => this.importCards(e));
+
+        if (!this.cardsContainer) {
+            console.error('cardsContainer não encontrado no DOM.');
+            this.showToast('error', 'Erro interno: contêiner de cartões não encontrado.');
+            return;
+        }
+
+        this.cardsContainer.addEventListener('click', (e) => {
+            console.log('Clique em cardsContainer, elemento:', e.target);
+            const actionElement = e.target.closest('[data-action]');
+            const idElement = e.target.closest('[data-id]');
+            const action = actionElement?.dataset.action;
+            const id = idElement?.dataset.id;
+            const image = e.target.closest('[data-image]')?.dataset.image;
+            const access = e.target.closest('[data-access]')?.dataset.access;
+            const menu = e.target.closest('.action-menu-item')?.parentElement;
+
+            console.log('Ação detectada:', action, 'ID do cartão:', id);
+
+            if (action === 'open-details' && id) {
+                e.stopPropagation();
+                console.log('Abrindo modal de detalhes para ID:', id);
+                this.openDetailsModal(id);
+            } else if (action === 'edit-card-menu' && id) {
+                e.stopPropagation();
+                console.log('Abrindo modal de edição para cartão ID:', id);
+                this.openCardModal(id);
+                this.closeActionMenu(menu);
+            } else if (action === 'copy-access' && access) {
+                e.stopPropagation();
+                console.log('Copiando acesso:', access);
+                navigator.clipboard.writeText(access);
+                this.showToast('success', 'Caminho copiado!');
+            } else if (action === 'duplicate-card-menu' && id) {
+                e.stopPropagation();
+                console.log('Duplicando cartão ID:', id);
+                this.duplicateCard(id);
+                this.closeActionMenu(menu);
+            } else if (action === 'delete-card-menu' && id) {
+                e.stopPropagation();
+                console.log('Abrindo modal de exclusão para ID:', id);
+                this.openDeleteModal(id);
+                this.closeActionMenu(menu);
+            } else if (action === 'export-card-menu' && id) {
+                e.stopPropagation();
+                console.log('Exportando cartão ID:', id);
+                this.exportSingleCard(id);
+                this.closeActionMenu(menu);
+            } else if (action === 'open-image' && image) {
+                e.stopPropagation();
+                console.log('Abrindo modal de imagem:', image);
+                this.openImageModal(image);
+            } else {
+                console.log('Nenhuma ação correspondente encontrada para o clique.');
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'n') {
+                e.preventDefault();
+                this.openCardModal();
+            }
+            if (e.key === 'Escape') {
+                if (this.cardModal.classList.contains('show')) {
+                    this.closeModal('card');
+                } else if (this.detailsModal.classList.contains('show')) {
+                    this.closeModal('details');
+                } else if (this.deleteModal.classList.contains('show')) {
+                    this.closeModal('delete');
+                } else if (this.helpModal.classList.contains('show')) {
+                    this.closeModal('help');
+                } else if (this.imageModal.classList.contains('show')) {
+                    this.closeModal('image');
+                } else if (this.exportModal.classList.contains('show')) {
+                    this.closeModal('export');
+                }
+            }
+            if ((e.ctrlKey && e.key === 's') || e.key === 'Enter') {
+                if (this.cardModal.classList.contains('show')) {
+                    e.preventDefault();
+                    const now = Date.now();
+                    if (this.lastSaveTime && now - this.lastSaveTime < 500) {
+                        console.log('Ação de salvamento por teclado ignorada devido a debounce.');
+                        return;
+                    }
+                    this.cardForm.dispatchEvent(new Event('submit'));
+                }
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.card-actions')) {
+                document.querySelectorAll('.action-menu').forEach(menu => {
+                    menu.classList.add('hidden');
+                });
+            }
+        });
+
+        this.cardsContainer.addEventListener('click', (e) => {
+            const menuBtn = e.target.closest('.menu-btn');
+            if (menuBtn) {
+                e.stopPropagation();
+                const menu = menuBtn.nextElementSibling;
+                if (menu && menu.classList.contains('action-menu')) {
+                    document.querySelectorAll('.action-menu').forEach(otherMenu => {
+                        if (otherMenu !== menu) otherMenu.classList.add('hidden');
+                    });
+                    menu.classList.toggle('hidden');
+                }
+            }
+        });
+    }
 
     generateCardCode(tag) {
         const existingCodes = this.cards
@@ -388,6 +388,7 @@ initializeEventListeners() {
             this.updateLastUpdated();
             this.closeModal('card');
             this.showToast('success', cardId ? 'Cartão atualizado com sucesso!' : 'Cartão adicionado com sucesso!');
+            this.debouncedUploadToGitHub();
         } catch (err) {
             console.error('Erro ao salvar cartão:', err);
             this.showToast('error', 'Erro ao salvar cartão: ' + err.message);
@@ -407,6 +408,7 @@ initializeEventListeners() {
             this.updateCardCounts();
             this.updateLastUpdated();
             this.showToast('success', 'Todos os cartões foram limpos com sucesso!');
+            this.debouncedUploadToGitHub();
         } catch (err) {
             console.error('Erro ao limpar cartões:', err);
             this.showToast('error', 'Erro ao limpar cartões: ' + err.message);
@@ -430,6 +432,7 @@ initializeEventListeners() {
             this.updateCardCounts();
             this.updateLastUpdated();
             this.showToast('success', 'Cartão excluído com sucesso!');
+            this.debouncedUploadToGitHub();
         } catch (err) {
             console.error('Erro ao excluir cartão:', err);
             this.showToast('error', 'Erro ao excluir cartão: ' + err.message);
@@ -469,6 +472,7 @@ initializeEventListeners() {
             this.updateLastUpdated();
             this.showToast('success', 'Cartão duplicado com sucesso!');
             this.closeModal('details');
+            this.debouncedUploadToGitHub();
         } catch (err) {
             console.error('Erro ao salvar cartão duplicado:', err);
             this.showToast('error', 'Erro ao salvar cartão duplicado: ' + err.message);
@@ -476,7 +480,7 @@ initializeEventListeners() {
     }
 
     async exportSingleCard(cardId) {
-        console.log(' publicznych cartão único com ID:', cardId);
+        console.log('Exportando cartão único com ID:', cardId);
         const card = this.cards.find(c => c.id === String(cardId));
         if (!card) {
             console.warn('Cartão não encontrado para exportação:', cardId);
@@ -500,19 +504,6 @@ initializeEventListeners() {
             console.error('Erro ao exportar cartão:', err);
             this.showToast('error', 'Erro ao exportar cartão: ' + err.message);
         }
-    }
-
-    removeImage() {
-        document.getElementById('card-image-input').value = '';
-        document.getElementById('card-image-input').dataset.url = '';
-        document.getElementById('card-image-preview').classList.add('hidden');
-        document.getElementById('card-image-path').textContent = '';
-        document.getElementById('remove-image-btn').classList.add('hidden');
-    }
-
-    openExportModal() {
-        this.exportModal = document.getElementById('export-modal');
-        this.exportModal.classList.add('show');
     }
 
     async exportCards(mode = 'complete') {
@@ -569,6 +560,104 @@ initializeEventListeners() {
         }
     }
 
+    async batchUpdateCards(updates) {
+        try {
+            updates.forEach(update => {
+                const card = this.cards.find(c => c.id === update.id);
+                if (!card) {
+                    console.warn(`Cartão com ID ${update.id} não encontrado.`);
+                    return;
+                }
+                if (update.action === 'edit') {
+                    Object.assign(card, update.data, { lastEdited: new Date().toISOString() });
+                } else if (update.action === 'delete') {
+                    this.cards = this.cards.filter(c => c.id !== update.id);
+                } else if (update.action === 'duplicate') {
+                    this.duplicateCard(update.id);
+                }
+            });
+            this.renderCards();
+            this.updateCardCounts();
+            this.updateLastUpdated();
+            this.showToast('success', 'Cartões atualizados em massa!');
+            this.debouncedUploadToGitHub();
+        } catch (err) {
+            console.error('Erro ao processar atualizações em massa:', err);
+            this.showToast('error', 'Erro ao atualizar cartões: ' + err.message);
+        }
+    }
+
+    async uploadToGitHub() {
+        const token = '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'; // Insira seu novo token aqui
+        const repo = 'rdenoni/CatalogGnews';
+        const path = 'database.json';
+        const url = `https://api.github.com/repos/${repo}/contents/${path}`;
+        console.log('Iniciando upload para o GitHub:', { repo, path, timestamp: new Date().toISOString() });
+
+        try {
+            const dataStr = JSON.stringify(this.cards, null, 2);
+            const content = btoa(unescape(encodeURIComponent(dataStr))); // Codifica em base64, tratando caracteres especiais
+            console.log('Dados preparados para upload:', { dataLength: dataStr.length, contentLength: content.length });
+
+            // Obter o SHA atual do arquivo
+            console.log('Buscando SHA do arquivo existente...');
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            console.log('Resposta da requisição GET:', { status: response.status, statusText: response.statusText });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Erro ao obter SHA: ${response.status} - ${errorData.message}`);
+            }
+            const { sha } = await response.json();
+            console.log('SHA obtido:', sha);
+
+            // Atualizar o arquivo no GitHub
+            console.log('Enviando atualização para o GitHub...');
+            const updateResponse = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: `Atualizar database.json - ${new Date().toISOString()}`,
+                    content,
+                    sha
+                })
+            });
+            console.log('Resposta da requisição PUT:', { status: updateResponse.status, statusText: updateResponse.statusText });
+            if (updateResponse.ok) {
+                console.log('Arquivo atualizado com sucesso no GitHub!');
+                this.showToast('success', 'Arquivo atualizado no GitHub!');
+            } else {
+                const errorData = await updateResponse.json();
+                throw new Error(`Erro ao atualizar arquivo: ${updateResponse.status} - ${errorData.message}`);
+            }
+        } catch (err) {
+            console.error('Erro ao enviar para o GitHub:', err.message);
+            this.showToast('error', `Erro ao atualizar no GitHub: ${err.message}`);
+        }
+    }
+
+    removeImage() {
+        document.getElementById('card-image-input').value = '';
+        document.getElementById('card-image-input').dataset.url = '';
+        document.getElementById('card-image-preview').classList.add('hidden');
+        document.getElementById('card-image-path').textContent = '';
+        document.getElementById('remove-image-btn').classList.add('hidden');
+    }
+
+    openExportModal() {
+        this.exportModal = document.getElementById('export-modal');
+        this.exportModal.classList.add('show');
+    }
+
     handleImageUpload(e) {
         const file = e.target.files[0];
         if (file) {
@@ -619,7 +708,7 @@ initializeEventListeners() {
                         }
 
                         if (!Array.isArray(importedCards)) {
-                            throw new Error('Formato inválido: o arquivo deve conter Canadian cartão ou um array de cartões.');
+                            throw new Error('Formato inválido: o arquivo deve conter um cartão ou um array de cartões.');
                         }
 
                         importedCards.forEach(card => {
@@ -670,6 +759,7 @@ initializeEventListeners() {
                 this.updateCardCounts();
                 this.updateLastUpdated();
                 this.showToast('success', `${validCardsCount} cartão(ões) importado(s) com sucesso!`);
+                this.debouncedUploadToGitHub();
             } else {
                 this.showToast('error', 'Nenhum cartão válido encontrado nos arquivos.');
             }

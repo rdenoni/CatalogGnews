@@ -1,10 +1,10 @@
 class CardCatalogUI extends CardCatalog {
-createCardElement(card) {
-    const displayName = this.escapeHTML(card.name);
-    const accessText = card.access ? this.escapeHTML(card.access) : '';
-    const div = document.createElement('div');
-    div.className = 'card-preview'; // Certifique-se de que está assim
-    div.innerHTML = `
+    createCardElement(card) {
+        const displayName = this.escapeHTML(card.name);
+        const accessText = card.access ? this.escapeHTML(card.access) : '';
+        const div = document.createElement('div');
+        div.className = 'card-preview'; // Certifique-se de que está assim
+        div.innerHTML = `
         <div class="card-header flex justify-between items-start gap-2">
             <h3 class="cursor-pointer flex-1" data-action="open-details" data-id="${card.id}">${displayName}</h3>
             <div class="card-actions relative">
@@ -33,27 +33,27 @@ createCardElement(card) {
         </div>
         ` : ''}
         <div class="card-footer mt-6">
-            ${card.access ? `
-            <div class="access-path mt-2">
-                <button class="copy-access-btn text-gray-600 dark:text-gray-200 hover:text-red-600 dark:hover:text-yellow-500 transition-all" data-action="copy-access" data-access="${card.access}" title="Copiar caminho de acesso" aria-label="Copiar caminho de acesso">
-                    <span class="material-icons text-sm">folder_copy</span>
-                </button>
-                <span class="access-path-text">${accessText}</span>
-            </div>
-            ` : ''}
+${card.access ? `
+<div class="access-path mt-2">
+    <button class="copy-access-btn text-gray-600 dark:text-gray-200 hover:text-red-600 dark:hover:text-yellow-500 transition-all" data-action="copy-access" data-access="${card.access}" title="Copiar caminho de acesso" aria-label="Copiar caminho de acesso">
+        <span class="material-icons text-sm">folder_copy</span>
+    </button>
+    <span class="access-path-text cursor-pointer" data-action="copy-access" data-access="${card.access}">${accessText}</span>
+</div>
+` : ''}
         </div>
     `;
-    return div;
-}
+        return div;
+    }
 
-renderCards() {
-    this.cardsContainer.innerHTML = '';
-    const filteredCards = this.getFilteredCards();
-    filteredCards.forEach(card => {
-        this.cardsContainer.appendChild(this.createCardElement(card));
-    });
-    this.observeCardFade();
-}
+    renderCards() {
+        this.cardsContainer.innerHTML = '';
+        const filteredCards = this.getFilteredCards();
+        filteredCards.forEach(card => {
+            this.cardsContainer.appendChild(this.createCardElement(card));
+        });
+        this.observeCardFade();
+    }
     getFilteredCards() {
         const search = this.searchInput.value.toLowerCase();
         const tag = this.tagFilter.value;
