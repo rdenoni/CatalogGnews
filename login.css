@@ -1,0 +1,200 @@
+:root {
+    --cor-principal: #EF4444; /* Tailwind red-500 */
+    --cor-secundaria: #00529F; 
+    --cor-escura: #374151; 
+    --cor-destaque: #eeff99; /* Amarelo solicitado */
+    --fundo-claro: #E5E7EB; 
+    --fundo-escuro: #1F2937; /* Tailwind gray-900 (aproximado) */
+    --texto-claro: #374151;
+    --texto-escuro: #D1D5DB;
+    --erro-claro: #EF4444;
+    --erro-escuro: var(--cor-destaque); /* Amarelo para erro em dark mode */
+    --branco: #FFFFFF;
+    --cinza-borda: #D1D5DB;
+    --cinza-placeholder: #6B7280;
+}
+
+body {
+    background: linear-gradient(135deg, var(--fundo-claro), #dde2f1); /* Suavizado o gradiente */
+    font-family: 'Open Sans', sans-serif;
+    font-size: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 1rem;
+    box-sizing: border-box;
+}
+
+.login-container {
+    background: var(--branco);
+    padding: 2.5rem 2rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.logo {
+    /* Original styles commented out for clarity if needed */
+    /* max-width: 180px; */
+    /* margin-bottom: 1rem; */
+
+    /* New styles for better control */
+    display: block; /* Allows margin auto for horizontal centering */
+    width: 100%;    /* Makes the logo responsive within its container */
+    max-width: 160px; /* Adjust this value to control the maximum width */
+                      /* Given the logo's aspect ratio (796x64), a width of 200px will result in a height of approx 16px */
+                      /* If you want it taller, you might need a different image or to set a height and let width be auto, but that could make it very wide. */
+    height: auto;   /* Maintains the aspect ratio */
+    margin: 0 auto 1.5rem auto; /* Centers the logo horizontally and adds bottom margin */
+}
+
+h1 {
+    font-size: 30px; 
+    margin-bottom: 2rem;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    color: var(--cor-escura);
+}
+
+.input-group {
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--texto-claro);
+    font-size: 0.9rem;
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+.input-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--cinza-placeholder);
+    font-size: 1.25rem; 
+    pointer-events: none; /* Para não interferir com o clique no select */
+}
+
+input[type="password"],
+select {
+    width: 100%;
+    padding: 12px 12px 12px 45px; 
+    border: 1px solid var(--cinza-borda);
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 1rem;
+    color: var(--texto-claro);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    background-color: var(--branco);
+    -webkit-appearance: none; /* Remove a aparência padrão no Safari/Chrome */
+    -moz-appearance: none; /* Remove a aparência padrão no Firefox */
+    appearance: none; /* Remove a aparência padrão */
+}
+
+select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 40px; 
+    cursor: pointer;
+}
+
+/* Estilo para quando o select está com valor padrão (desabilitado) */
+select:required:invalid {
+    color: var(--cinza-placeholder);
+}
+select option {
+    color: var(--texto-claro); /* Cor das opções quando o dropdown está aberto */
+}
+select option[value=""][disabled] {
+    display: none; /* Esconde a opção placeholder no dropdown aberto */
+}
+
+
+input[type="password"]:focus,
+select:focus {
+    outline: none;
+    border-color: var(--cor-principal); 
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2); /* Usando o tom de vermelho EF4444 para o shadow */
+}
+
+input[type="password"].error,
+select.error { 
+    border-color: var(--erro-claro);
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+.login-button {
+    width: 100%;
+    padding: 12px;
+    background: var(--cor-principal);
+    color: var(--branco);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: 'Open Sans', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.login-button:hover {
+    background: #D92626; /* Tom mais escuro do principal EF4444 */
+    transform: translateY(-2px);
+}
+
+.login-button:active {
+    transform: translateY(0);
+}
+
+.button-icon {
+    font-size: 1.25rem;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.error-message {
+    color: var(--erro-claro);
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    text-align: left; 
+}
+
+
+@media (max-width: 480px) {
+    .login-container {
+        padding: 2rem 1.5rem;
+    }
+
+    h1 {
+        font-size: 1.5rem; 
+    }
+    
+    .logo {
+        max-width: 150px;
+    }
+
+    input[type="password"],
+    select {
+        padding: 10px 10px 10px 40px;
+        font-size: 0.95rem;
+    }
+}

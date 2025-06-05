@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Arte GNews</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'poppins': ['Poppins', 'sans-serif'],
+                        'open-sans': ['Open Sans', 'sans-serif'],
+                        'fira-mono': ['Fira Mono', 'monospace'],
+                    },
+                    colors: {
+                        'cor-principal': '#EF4444',
+                        'cor-destaque': '#eeff99',
+                        'fundo-claro': '#E5E7EB',
+                        'fundo-escuro': '#111827',
+                        'texto-claro': '#374151',
+                        'texto-escuro': '#D1D5DB',
+                        'fundo-card-claro': '#FFFFFF',
+                        'borda-card-claro': '#E5E7EB',
+                        'fundo-card-escuro': '#1F2937',
+                        'borda-card-escuro': '#374151',
+                    }
+                }
+            },
+
+        };
+    </script>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Open+Sans:wght@400;600&family=Fira+Mono&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="layout.css">
+    <link rel="stylesheet" href="modals.css">
+
+    <script>
+        console.log('Script inline INICIAL (main.html) está sendo lido.'); // LOG DE TESTE INICIAL
+
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM completamente carregado e analisado (main.html inline script).'); // LOG 1
+
+            const user = localStorage.getItem('user');
+
+            const usernameDisplay = document.getElementById('username-display');
+            if (usernameDisplay) {
+                usernameDisplay.textContent = `Bem-vindo, ${user || 'Usuário'}`;
+            } else {
+                console.error('Elemento com id="username-display" não encontrado.');
+            }
+
+            const logoutBtn = document.getElementById('logout-btn');
+            console.log('Botão de logout encontrado:', logoutBtn); // LOG 2
+
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', () => {
+                    console.log('Botão de logout CLICADO.'); // LOG 3
+                    localStorage.removeItem('user');
+                    console.log('Usuário removido do localStorage.'); // LOG 4
+                    window.location.href = 'index.html';
+                    // LOG 5 (abaixo) pode não aparecer se o redirecionamento for muito rápido
+                    console.log('Redirecionamento para index.html solicitado.');
+                });
+                console.log('Listener de clique ADICIONADO ao botão de logout.'); // LOG 6
+            } else {
+                console.error('Elemento com id="logout-btn" NÃO encontrado. Listener não adicionado.'); // LOG 7
+            }
+
+            // Lógica para atribuir IDs e event listeners aos botões de fechar modal
+            document.querySelectorAll('.modal-close-btn[data-modal-type]').forEach(btn => {
+                const modalType = btn.dataset.modalType; // Obtém o valor do data-modal-type
+                btn.id = `close-${modalType}-modal-btn`; // Define um ID único
+                console.log(`ID dinâmico "${btn.id}" atribuído ao botão de fechar modal.`);
+
+                // Adiciona o event listener de forma programática
+                btn.addEventListener('click', (e) => {
+                    const buttonId = e.currentTarget.id;
+                    const typeFromId = buttonId.replace('close-', '').replace('-modal-btn', '');
+                    if (window.cardCatalog && typeof window.cardCatalog.closeModal === 'function') {
+                        window.cardCatalog.closeModal(typeFromId);
+                    } else {
+                        console.warn('cardCatalog ou closeModal não disponíveis.');
+                    }
+                });
+            });
+        });
+    </script>
+</head>
+
+<body
+    class="font-open-sans bg-fundo-claro dark:bg-fundo-escuro text-texto-claro dark:text-texto-escuro transition-colors duration-300">
+    <div id="app" class="min-h-screen flex flex-col">
+
+        <!-- Cabeçalho Inicio-->
+        <header
+            class="bg-cor-principal dark:bg-cor-destaque text-white dark:text-gray-900 p-6 shadow-3g sticky top-0 z-30">
+            <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div class="text-center sm:text-left flex items-center justify-end gap-3 ">
+                    <img src="data:image/png;base64,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"
+                        alt="GNews Catálogo Logo" class="header-gnews-logo">
+                    <h1 class="sm:text-xl font-poppins font-bold">CATÁLOGO DE ARTES</h1>
+
+                    <!-- Botão Logout -->
+                    
+                    
+                    <button id="logout-btn" title="Sair" aria-label="Sair"
+                        class="hover:text-white/70 dark:hover:text-texto-claro transition-colors flex flex-col sm:flex-row items-center justify-center gap-2 w-full sm:w-auto">
+                        <span class="material-icons">logout</span>
+                    </button>
+
+
+                </div>
+                <div class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+
+                    <!-- Campo de pesquisa -->
+                    <div class="relative">
+                        <input id="search-input" type="text" placeholder="Pesquisar Nome ou Código"
+                            aria-label="Buscar cartões" class="p-3 rounded-lg bg-white dark:bg-gray-700/90 text-gray-800 dark:text-gray-100 w-full sm:w-auto border
+                        border-transparent focus:border-red-300 dark:focus:border-yellow-300 focus:ring-2 focus:ring-red-200
+                        dark:focus:ring-yellow-200 transition-all">
+
+                        <span
+                            class="material-icons absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500">search</span>
+
+                        <button id="clear-search" class="absolute right-2 top-1/2 transform -translate-y-1/2 hidden"
+                            aria-label="Limpar busca">
+                            <span class="material-icons text-gray-500 hover:text-cor-principal">close</span>
+                        </button>
+                    </div>
+
+                    <!-- Campo Categorias -->
+                    <select id="tag-filter" class="p-3 rounded-lg bg-white dark:bg-gray-700/90 text-gray-800 dark:text-gray-100 w-full sm:w-auto border
+                        border-transparent focus:border-red-300 dark:focus:border-yellow-300 focus:ring-2 focus:ring-red-200
+                        dark:focus:ring-yellow-200 transition-all" aria-label="Filtrar por categoria">
+
+                        <option value="">Todas as Categorias</option>
+                        <option value="JRN">JRN (Jornais)</option>
+                        <option value="PRG">PRG (Programas)</option>
+                        <option value="PRM">PRM (Promo)</option>
+                        <option value="MKT">MKT (Marketing)</option>
+                        <option value="ESP">ESP (Esporte)</option>
+                    </select>
+
+
+                    <!-- Campo Filtro -->
+                    <select id="sort-order" class="p-3 rounded-lg bg-white dark:bg-gray-700/90 text-gray-800 dark:text-gray-100 w-full
+                        sm:w-auto border border-transparent focus:border-red-300 dark:focus:border-yellow-300 focus:ring-2
+                        focus:ring-red-200 dark:focus:ring-yellow-200 transition-all" aria-label="Ordenar cartões">
+                        <option value="name">Nome (A-Z)</option>
+                        <option value="name-desc">Nome (Z-A)</option>
+                        <option value="lastEdited">Última Edição</option>
+                        <option value="tag">Categoria</option>
+                    </select>
+
+                    <!-- Botão Light/Dark -->
+                    <button
+                        class="material-icons dark-mode-toggle w-10 h-10 rounded-full hover:bg-white/20 dark:hover:bg-black/20 transition-colors"
+                        onclick="cardCatalog.toggleDarkMode()" title="Alternar modo escuro">light_mode</button>
+
+                    <!-- Botão Ajuda -->
+                    <button
+                        class="material-icons animate-help w-10 h-10 rounded-full hover:bg-white/20 dark:hover:bg-black/20 transition-colors"
+                        onclick="cardCatalog.openHelpModal()" title="Ajuda">help_outline</button>
+                </div>
+
+            </div>
+
+        </header>
+        <!-- Cabeçalho Fim-->
+
+        <main class="p-4 sm:p-6 max-w-7xl mx-auto w-full flex-grow">
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-2">
+                <div class="stats text-sm text-gray-700 dark:text-gray-300">
+                    Total: <span id="total-cards" class="font-semibold">0</span> | Filtrados: <span id="filtered-cards"
+                        class="font-semibold">0</span>
+                </div>
+                <div id="last-updated" class="text-sm text-gray-600 dark:text-gray-300">Última atualização: ...</div>
+            </div>
+            <div id="cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            </div>
+        </main>
+
+        <!-- Botões FAB Flutuantes -->
+        <input type="file" id="import-input" class="hidden" accept=".json,application/json" multiple>
+        <div class="fixed bottom-6 right-6 flex flex-col gap-3 z-40">
+
+            <button id="upload-btn" class="fab" onclick="document.getElementById('import-input').click()"
+                title="Importar cartões (JSON)">
+                <span class="material-icons">upload</span></button>
+
+            <button id="download-btn" class="fab" onclick="cardCatalog.openExportModal()" title="Exportar cartões">
+                <span class="material-icons">download</span></button>
+
+            <button id="delete-sweep-btn" class="fab hidden" onclick="cardCatalog.clearAllCards()"
+                title="Limpar todos os cartões">
+                <span class="material-icons">delete_sweep</span></button>
+
+            <button id="add-btn" class="fab hidden" onclick="cardCatalog.openCardModal()" title="Adicionar novo cartão">
+                <span class="material-icons">add</span></button>
+        </div>
+
+        <!-- Modal Cartões -->
+        <div id="card-modal" class="modal hidden" role="dialog" aria-labelledby="card-modal-title" aria-modal="true"
+            tabindex="-1">
+            <div
+                class="modal-content bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-2xl w-[95%] p-6 relative transform transition-all border border-gray-200 dark:border-gray-700">
+                <button
+                    class="modal-close-btn absolute top-3 right-3 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors hover:scale-110 duration-150"
+                    onclick="cardCatalog.closeModal('card')" title="Fechar">
+                    <span class="material-icons text-gray-600 dark:text-gray-300">close</span>
+                </button>
+
+                <h2 id="card-modal-title"
+                    class="text-xl sm:text-2xl font-poppins font-semibold text-gray-900 dark:text-gray-100 mb-6">
+                    Adicionar/Editar Cartão</h2>
+                <form id="card-form" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="form-section">
+                        <label for="card-name" class="label-style"><span
+                                class="material-icons text-sm mr-1">title</span>Nome *</label>
+                        <input id="card-name" type="text" class="input-style" placeholder="Ex.: Gráfico Pizza" required>
+                        <p id="card-name-error" class="error-text-style hidden">Nome é obrigatório.</p>
+                    </div>
+                    <div class="form-section">
+                        <label for="card-tag" class="label-style"><span
+                                class="material-icons text-sm mr-1">local_offer</span>Categoria *</label>
+                        <select id="card-tag" class="input-style" required>
+                            <option value="" disabled>Selecione</option>
+                            <option value="JRN">JRN (Jornais)</option>
+                            <option value="PRG">PRG (Programas)</option>
+                            <option value="PRM">PRM (Promo)</option>
+                            <option value="MKT">MKT (Marketing)</option>
+                            <option value="ESP">ESP (Esporte)</option>
+                        </select>
+                        <p id="card-tag-error" class="error-text-style hidden">Categoria é obrigatória.</p>
+                    </div>
+                    <div class="form-section">
+                        <label for="card-youtube" class="label-style"><span
+                                class="material-icons text-sm mr-1">play_circle_outline</span>Link Tutorial</label>
+                        <input id="card-youtube" type="url" class="input-style"
+                            placeholder="https://youtube.com/watch?v=...">
+                        <p id="card-youtube-error" class="error-text-style hidden">URL do YouTube inválida.</p>
+                    </div>
+                    <div class="form-section">
+                        <label for="card-access" class="label-style"><span
+                                class="material-icons text-sm mr-1">folder_open</span>Caminho de Acesso</label>
+                        <input id="card-access" type="text" class="input-style" placeholder="T:\\pasta\\arquivo...">
+                        <p id="card-access-error" class="error-text-style hidden">Caminho inválido.</p>
+                    </div>
+                    <div class="form-section md:col-span-2">
+                        <label for="card-image-input" class="label-style"><span
+                                class="material-icons text-sm mr-1">image</span>Imagem</label>
+                        <div class="flex items-center gap-3 mt-1">
+                            <button type="button" id="select-image-btn" class="btn-secondary-sm">Selecionar
+                                Imagem</button>
+
+                            <button type="button" id="remove-image-btn" class="btn-danger-sm hidden">Remover</button>
+                        </div>
+                        <input id="card-image-input" type="file" accept="image/*" class="hidden">
+                        <p id="card-image-path" class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate"></p>
+                        <img id="card-image-preview"
+                            class="hidden mt-2 rounded-lg max-h-40 object-contain border border-gray-300 dark:border-gray-600"
+                            alt="Pré-visualização">
+                    </div>
+                    <div class="form-section md:col-span-2">
+                        <label for="card-description" class="label-style"><span
+                                class="material-icons text-sm mr-1">description</span>Descrição</label>
+                        <textarea id="card-description" class="input-style" rows="3"
+                            placeholder="Breve descrição (max. 200)" maxlength="200"></textarea>
+                        <p id="card-description-counter"
+                            class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">0/200</p>
+                    </div>
+                    <input id="card-id" type="hidden">
+                    <div class="flex justify-end gap-3 md:col-span-2 mt-4">
+                        <button type="button" class="btn-secondary" onclick="cardCatalog.clearCardForm()">
+
+                            <span class="material-icons text-lg">delete_sweep</span>
+
+                            Limpar</button>
+                        <button type="submit" id="save-card-btn" class="btn-primary">
+                            <span class="material-icons text-lg">save</span>
+                            Salvar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+
+        <!-- Modal Ampliar Imagem -->
+        <div id="image-modal" class="modal hidden" role="dialog" aria-labelledby="image-modal-title" aria-modal="true"
+            tabindex="-1">
+
+            <div class="modal-content bg-transparent p-0 shadow-2xl max-w-7xl w-auto max-h-[90vh]">
+
+                <img id="image-modal-content" src="" alt="Imagem ampliada"
+                    class="block max-w-full max-h-[inherit] rounded-lg shadow-2xl">
+
+                <button
+                    class="modal-close-btn absolute -top-3 -right-3 sm:top-2 sm:right-2 bg-gray-800/70 text-white rounded-full p-1.5 hover:bg-gray-700/90 hover:scale-110 transition-transform duration-150"
+                    onclick="cardCatalog.closeModal('image')" title="Fechar">
+                    <span class="material-icons">close</span>
+                </button>
+
+                <h2 id="image-modal-title" class="sr-only">Imagem Ampliada</h2>
+            </div>
+        </div>
+
+
+        <!-- Modal Detalhes -->
+        <div id="details-modal" class="modal hidden" role="dialog" aria-labelledby="details-modal-main-title"
+            aria-describedby="details-modal-desc-content" aria-modal="true" tabindex="-1">
+
+            <div
+                class="modal-content bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-4xl w-[95%] p-6 sm:p-8 relative border border-gray-200 dark:border-gray-700">
+                <button
+                    class="modal-close-btn absolute top-3 right-3 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 hover:scale-110 transition-transform duration-150"
+                    onclick="cardCatalog.closeModal('details')" title="Fechar">
+                    <span class="material-icons text-gray-600 dark:text-gray-300">close</span>
+                </button>
+
+                <h2 id="details-modal-main-title"
+                    class="text-2xl sm:text-3xl font-poppins font-semibold text-gray-900 dark:text-gray-100 mb-6">
+                    Detalhes do Cartão</h2>
+                <div id="details-modal-desc-content" class="flex flex-col lg:flex-row gap-6 sm:gap-8">
+                    <div class="w-full lg:w-1/2">
+                        <img id="details-image" src="" alt="Imagem do cartão"
+                            class="w-full rounded-lg max-h-[300px] sm:max-h-[400px] object-cover border border-gray-200 dark:border-gray-600 cursor-pointer hover:shadow-lg transition-shadow"
+                            data-action="open-image" aria-label="Imagem do cartão, clique para ampliar">
+                    </div>
+                    <div class="w-full lg:w-1/2 flex flex-col gap-4">
+
+                        <div class="flex justify-between items-start">
+                            <span id="details-name"
+                                class="text-xl sm:text-2xl font-poppins font-semibold text-gray-800 dark:text-gray-100 break-words"
+                                aria-label="Nome do cartão"></span>
+                            <span id="details-code"
+                                class="text-xs sm:text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-2.5 py-1 rounded-md whitespace-nowrap font-mono"
+                                aria-label="Código do cartão"></span>
+                        </div>
+                        <div class="space-y-3 text-sm text-gray-600 dark:text-gray-300">
+                            <div class="flex items-start gap-2.5">
+                                <span
+                                    class="material-icons text-base text-cor-principal dark:text-cor-destaque mt-0.5">description</span>
+                                <div class="flex-1">
+                                    <strong>Descrição:</strong>
+                                    <div id="details-description"
+                                        class="description-container mt-1 text-gray-700 dark:text-gray-200"></div>
+                                </div>
+                            </div>
+                            <p class="flex items-center gap-2.5">
+                                <span
+                                    class="material-icons text-base text-cor-principal dark:text-cor-destaque">play_circle_outline</span>
+                                <span><strong>Tutorial:</strong> <a id="details-youtube" href="#" target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="text-cor-principal dark:text-cor-destaque hover:underline font-semibold"
+                                        aria-label="Link para o tutorial no YouTube">Assistir Tutorial</a></span>
+                            </p>
+                            <p class="flex items-center gap-2.5">
+                                <span
+                                    class="material-icons text-base text-cor-principal dark:text-cor-destaque">event</span>
+                                <strong>Criado em:</strong> <span id="details-created"
+                                    aria-label="Data de criação"></span>
+                            </p>
+                            <p class="flex items-center gap-2.5">
+                                <span
+                                    class="material-icons text-base text-cor-principal dark:text-cor-destaque">update</span>
+                                <strong>Atualizado em:</strong> <span id="details-last-edited"
+                                    aria-label="Data da última edição"></span>
+                            </p>
+                        </div>
+                        <div
+                            class="modal-actions flex flex-wrap gap-2 sm:gap-3 mt-auto pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <button class="btn-success-sm flex items-center gap-1.5" data-action="copy-card-code"
+                                data-id="" title="Copiar Código da TAG"><span class="material-icons text-sm">sell</span>
+                                Copiar TAG</button>
+                            <button class="btn-primary-sm flex items-center gap-1.5"
+                                data-action="open-fazer-pedido-modal" data-id="" title="Fazer Pedido"><span
+                                    class="material-icons text-sm">shopping_cart</span> Fazer Pedido</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Modal Fazer Pedido -->
+        <div id="fazer-pedido-modal" class="modal hidden" aria-hidden="true" inert>
+            <div class="modal-content bg-white dark:bg-gray-800 rounded-2xl p-8 w-full max-w-3xl shadow-2xl">
+
+                <button
+                    class="modal-close-btn absolute top-3 right-3 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 hover:scale-110 transition-transform duration-150"
+                    onclick="window.cardCatalog.closeModal('fazer-pedido')">
+                    <span class="material-icons text-gray-600 dark:text-gray-300">close</span>
+                </button>
+
+
+
+                <h2 class="text-2xl font-poppins font-bold mb-6 text-gray-800 dark:text-gray-100">Fazer Pedido</h2>
+                <form id="fazer-pedido-form" action="https://formspree.io/f/myzjgwre" method="POST"
+                    enctype="multipart/form-data" class="space-y-6">
+                    <input type="hidden" id="pedido-card-id" name="card_id">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="pedido-card-name"
+                                class="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-200">Nome do
+                                Cartão</label>
+                            <input type="text" id="pedido-card-name" name="card_name"
+                                class="w-full bg-gray-100 dark:bg-gray-700" readonly>
+                        </div>
+                        <div>
+                            <label for="pedido-card-code"
+                                class="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-200">Código do
+                                Cartão</label>
+                            <input type="text" id="pedido-card-code" name="card_code"
+                                class="w-full bg-gray-100 dark:bg-gray-700" readonly>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="pedido-nome-solicitante" class="label-style">Nome Completo
+                                do Solicitante *</label>
+                            <input type="text" id="pedido-nome-solicitante" name="nome_solicitante" class="input-style"
+                                placeholder="Digite seu nome completo" required>
+                            <p id="pedido-nome-solicitante-error" class="error-text-style hidden">Nome do solicitante é
+                                obrigatório.</p>
+                        </div>
+                        <div>
+                            <label for="pedido-producao" class="label-style">Produção
+                                *</label>
+                            <select id="pedido-producao" name="producao" class="input-style" required>
+                                <option value="" disabled selected>Selecione a produção</option>
+                                <option value="Estudio i">Estudio i</option>
+                                <option value="Conexão">Conexão</option>
+                                <option value="j10">j10</option>
+                                <option value="Internacional">Internacional</option>
+                                <option value="Especial">Especial</option>
+                                <option value="Documentario">Documentario</option>
+                                <option value="Promo">Promo</option>
+                            </select>
+                            <p id="pedido-producao-error" class="error-text-style hidden">Produção é obrigatória.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="pedido-data-entrega" class="label-style">Data de
+                                Entrega *</label>
+                            <input type="date" id="pedido-data-entrega" name="data_entrega" class="input-style"
+                                required>
+                            <p id="pedido-data-entrega-error" class="error-text-style hidden">Data de entrega é
+                                obrigatória.</p>
+                        </div>
+                        <div>
+                            <label for="pedido-hora-entrega" class="label-style">Hora de
+                                Entrega *</label>
+                            <input type="time" id="pedido-hora-entrega" name="hora_entrega" class="input-style"
+                                required>
+                            <p id="pedido-hora-entrega-error" class="error-text-style hidden">Hora de entrega é
+                                obrigatória.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="pedido-anexos-input"
+                            class="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-200">Anexar Arquivos
+                            (Múltiplos)</label>
+                        <div class="flex items-center gap-2 mb-2">
+                            <button type="button" id="pedido-select-anexos-btn"
+                                class="btn-secondary flex items-center justify-center gap-2 px-4 py-2">
+                                <span class="material-icons text-lg">attach_file</span> Carregar Arquivos
+                            </button>
+                        </div>
+                        <input type="file" id="pedido-anexos-input" name="anexos"
+                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" multiple class="hidden">
+                        <div id="pedido-anexos-list" class="text-sm text-gray-500 dark:text-gray-400 mt-2"></div>
+                    </div>
+                    <div>
+                        <label for="pedido-texto" class="label-style">Detalhes do Pedido
+                            *</label>
+                        <textarea id="pedido-texto" name="detalhes_pedido" class="input-style resize-none" rows="6"
+                            placeholder="Descreva os detalhes do pedido" required></textarea>
+                        <p id="pedido-texto-error" class="error-text-style hidden">Detalhes do pedido são obrigatórios.
+                        </p>
+                    </div>
+                    <div class="flex justify-end gap-3">
+                        <button type="button" class="btn-secondary" onclick="cardCatalog.clearCardForm()">
+
+                            <span class="material-icons text-lg">delete_sweep</span>
+
+                            Limpar</button>
+                        <button type="submit" id="enviar-pedido-btn"
+                            class="btn-primary flex items-center justify-center gap-2 px-4 py-2">
+                            <span class="material-icons text-lg">send</span> Enviar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+
+        <!-- Modal Pedido sucesso -->
+        <div id="pedido-success-modal" class="modal hidden" aria-hidden="true" inert>
+            <div
+                class="modal-content bg-white dark:bg-gray-800 rounded-2xl p-8 w-full max-w-md shadow-2xl text-center flex flex-col gap-6 min-h-[400px]">
+                <div class="flex flex-col items-center gap-4 flex-grow justify-center">
+                    <span class="material-icons text-6xl text-green-500 dark:text-green-400">check_circle</span>
+                    <h2 class="text-2xl font-poppins font-bold text-gray-800 dark:text-gray-100">Pedido Enviado com
+                        Sucesso!</h2>
+                    <p class="text-gray-600 dark:text-gray-300">Seu pedido foi enviado e será processado em breve.</p>
+                </div>
+                <div class="mt-auto">
+                    <button
+                        class="btn-primary w-full flex items-center justify-center gap-2 px-6 py-3 text-lg font-semibold rounded-lg bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-white transition-all duration-200 transform hover:scale-105 shadow-md"
+                        onclick="window.cardCatalog.closeModal('pedido-success')">
+                        <span class="material-icons text-xl">check</span> Entendido
+                    </button>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Modal confirmar Exportar Cartão -->
+        <div id="export-modal" class="modal hidden" role="dialog" aria-labelledby="export-modal-title-text"
+            aria-modal="true" tabindex="-1">
+            <div
+                class="modal-content bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-[35%] p-6 sm:p-8 relative border border-gray-200 dark:border-gray-700">
+                 <button
+                    class="modal-close-btn absolute top-3 right-3 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors hover:scale-110 duration-150"
+                    data-modal-type="delete" title="Fechar">
+                    <span class="material-icons text-gray-600 dark:text-gray-300">close</span>
+                </button>
+
+
+                <h2 id="export-modal-title-text"
+                    class="text-xl sm:text-2xl font-poppins font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                    Exportar Cartões</h2>
+                <p class="text-gray-600 dark:text-gray-300 mb-6 text-sm">Escolha como exportar:</p>
+                
+                <div class="flex flex-row gap-3 items-center">
+                    
+                    <button id="export-complete-btn" class="btn-primary w-full flex items-center justify-center gap-2"
+                        onclick="cardCatalog.exportCards('complete')">
+                        <span class="material-icons text-base">archive</span>JSON Único</button>
+                    
+                        <button id="export-separate-btn" class="btn-primary w-full flex items-center justify-center gap-2"
+                        onclick="cardCatalog.exportCards('separate')">
+                        <span class="material-icons text-base">file_copy</span>JSON Múltiplos</button>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Modal Deletar Cartão -->
+        <section id="delete-modal" class="modal hidden" aria-hidden="true" inert>
+
+            <div
+                class="modal-content bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-md w-full mx-auto border border-gray-200 dark:border-gray-700">
+
+                <button
+                    class="modal-close-btn absolute top-3 right-3 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors hover:scale-110 duration-150"
+                    data-modal-type="delete" title="Fechar">
+                    <span class="material-icons text-gray-600 dark:text-gray-300">close</span>
+                </button>
+
+                <h2 class="text-xl font-poppins font-semibold sm:text-2xl text-gray-800 dark:text-gray-100 mb-4">
+                    Confirmar Exclusão
+                </h2>
+
+                <p class="text-gray-600 dark:text-gray-300 mb-4">
+                    Tem certeza que deseja excluir o cartão "<span id="delete-card-name" class="font-medium"></span>"?
+                    <span class="block mt-2 text-sm text-red-500 dark:text-yellow-400">Essa ação é irreversível.</span>
+                </p>
+                <div class="flex justify-center gap-3 mt-7">
+                    <button id="cancel-delete-btn" class="btn-secondary flex items-center gap-2">
+                        <span class="material-icons text-sm">close</span> Cancelar
+                    </button>
+
+                    <button id="confirm-delete" class="btn-danger flex items-center gap-2">
+                        <span class="material-icons text-sm">check</span> Confirmar
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- Modal de Ajuda -->
+        <div class="modal hidden" id="help-modal" role="dialog" aria-labelledby="help-modal-main-title"
+            aria-modal="true" tabindex="-1">
+            <div class="modal-content bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-2xl w-full">
+
+                <button
+                    class="modal-close-btn absolute top-3 right-3 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 hover:scale-110 transition-transform duration-150"
+                    onclick="window.cardCatalog.closeModal('help')">
+                    <span class="material-icons text-gray-600 dark:text-gray-300">close</span>
+                </button>
+
+                <h2 class="text-3xl font-poppins font-bold text-texto-claro dark:text-texto-escuro mb-4">Guia Catálogo
+                </h2>
+                <div class="space-y-4 text-texto-claro dark:text-texto-escuro text-sm">
+                    <p>Bem-vindo ao Catálogo de Arte GNews! Este sistema permite gerenciar cartões de arte de forma
+                        eficiente. Veja como usar:</p>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li><strong>Adicionar Cartão:</strong> Clique no botão <span
+                                class="material-icons inline-block text-cor-principal dark:text-cor-destaque">add</span>
+                            (requer permissão de Admin ou Arte).</li>
+                        <li><strong>Buscar/Filtrar:</strong> Use a barra de pesquisa ou os filtros de categoria e
+                            ordenação para encontrar cartões.</li>
+                        <li><strong>Ver Detalhes:</strong> Clique no nome ou imagem de um cartão para abrir seus
+                            detalhes.</li>
+                        <li><strong>Ações do Cartão:</strong> Clique em <span
+                                class="material-icons inline-block text-gray-500 dark:text-gray-400">more_vert</span>
+                            para editar, duplicar, excluir ou exportar (sujeito a permissões).</li>
+                        <li><strong>Importar/Exportar:</strong> Use <span
+                                class="material-icons inline-block text-cor-principal dark:text-cor-destaque">upload</span>
+                            para importar JSONs.
+                            <span
+                                class="material-icons inline-block text-cor-principal dark:text-cor-destaque">download</span>
+                            para exportar cartões.
+                        </li>
+
+                        <li><strong>Modo Escuro:</strong> Alterne com <span
+                                class="material-icons inline-block text-cor-principal dark:text-cor-destaque">dark_mode</span>/<span
+                                class="material-icons inline-block text-cor-principal dark:text-cor-destaque">light_mode</span>.
+                        </li>
+                        <li><strong>Fazer Pedido:</strong> Clique em "Fazer Pedido" nos detalhes do cartão para criar
+                            solicitações.</li>
+                        <li><strong>Limpar Tudo:</strong> Use <span
+                                class="material-icons inline-block text-cor-principal dark:text-cor-destaque">delete_sweep</span>
+                            para excluir todos os cartões (apenas Admin).</li>
+                    </ul>
+                    <div class="border-t border-cinza-borda dark:border-borda-card-escuro pt-4">
+                        <h3 class="text-lg font-semibold text-texto-claro dark:text-texto-escuro mb-2">Atalhos de
+                            Teclado</h3>
+                        <ul class="list-disc pl-5 space-y-1">
+                            <li><kbd class="kbd-style">Ctrl+N</kbd>: Abre o modal para adicionar novo cartão.</li>
+                            <li><kbd class="kbd-style">Enter</kbd> (em formulários): Salva o cartão ou pedido (exceto em
+                                campos de texto
+                                longo).</li>
+                            <li><kbd class="kbd-style">Ctrl+S</kbd> (em modais): Salva o cartão ou pedido.</li>
+                            <li><kbd class="kbd-style">Esc</kbd>: Fecha o modal ativo ou menus abertos.</li>
+                        </ul>
+                    </div>
+                    <div class="border-t border-cinza-borda dark:border-borda-card-escuro pt-4">
+                        <h3 class="text-lg font-semibold text-texto-claro dark:text-texto-escuro mb-2">Dicas</h3>
+                        <ul class="list-disc pl-5 space-y-1">
+                            <li>Use URLs válidas para YouTube e caminhos de acesso para garantir compatibilidade.</li>
+                            <li>Imagens devem ser menores que 5MB; anexos de pedidos, menores que 10MB.</li>
+                            <li>Exportações podem ser feitas como um único JSON ou arquivos separados.</li>
+                            <li>Permissões variam: Admin tem acesso total, Arte pode adicionar/editar, Editor apenas
+                                visualiza.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+<div id="toast-container"></div>
+
+        <!-- Carregar Scripts -->
+        <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js" defer></script>
+        <script src="core.js"></script>
+        <script src="ui.js"></script>
+        <script src="data.js"></script>
+
+
+
+</body>
+
+</html>
